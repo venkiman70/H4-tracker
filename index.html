@@ -133,6 +133,30 @@ tbody td.center{text-align:center}
 .cat-tax{background:#DBEAFE;color:#1E40AF}.cat-advisory{background:#FDE68A;color:#78350F}.cat-formation{background:#D1FAE5;color:#065F46}
 .type-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #F9FAFB;font-size:13px}
 .type-row:last-child{border-bottom:none}
+/* Auth */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1B2A4A 0%,#243556 100%)}
+.auth-card{background:#fff;border-radius:20px;padding:40px;width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.auth-brand .brand-icon{width:40px;height:40px;font-size:16px;background:#1B2A4A;color:#D4A843}
+.auth-brand-text{font-size:18px;font-weight:700;color:#1B2A4A}
+.auth-brand-sub{font-size:12px;color:#D4A843}
+.auth-title{font-size:16px;font-weight:600;color:#1B2A4A;margin-bottom:4px}
+.auth-desc{font-size:13px;color:#6B7280;margin-bottom:20px}
+.auth-field{margin-bottom:16px}
+.auth-field label{display:block;font-size:12px;font-weight:500;color:#374151;margin-bottom:4px}
+.auth-field input{width:100%;border:1px solid #E5E7EB;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none}
+.auth-field input:focus{border-color:#1B2A4A;box-shadow:0 0 0 3px rgba(27,42,74,0.1)}
+.auth-submit{width:100%;padding:12px;background:#1B2A4A;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:background 0.15s}
+.auth-submit:hover{background:#243556}
+.auth-submit:disabled{opacity:0.5;cursor:not-allowed}
+.auth-error{background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
+.auth-info{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
+.mfa-code-input{text-align:center;font-size:24px;letter-spacing:8px;font-weight:700;font-family:'Inter',monospace}
+.qr-wrap{text-align:center;margin:16px 0;padding:16px;background:#F9FAFB;border-radius:12px}
+.qr-wrap img{border-radius:8px}
+.logout-btn{width:100%;text-align:left;padding:10px 16px;border:none;background:none;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;font-family:inherit;border-left:3px solid transparent;display:flex;align-items:center;gap:10px;transition:all 0.15s}
+.logout-btn:hover{background:rgba(239,68,68,0.1);color:#FCA5A5}
+.user-info{padding:8px 16px;font-size:11px;color:rgba(255,255,255,0.4);border-bottom:1px solid rgba(255,255,255,0.05)}
 </style>
 </head>
 <body>
@@ -143,10 +167,73 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 let sb;
 try{const{createClient}=supabase;sb=createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){document.getElementById('root').innerHTML='<div style="padding:40px;color:red"><h2>Error</h2><pre>'+e.message+'</pre></div>';throw e}
 
-let S={page:'dashboard',modal:null,search:'',filterType:'all',filterCat:'all',summary:{total_active:0,ready_to_prepare:0,waiting:0,on_call_list:0},dashClients:[],allClients:[],engTypes:[],clientEngagements:[],selectedClientId:null,selectedEngId:null,engDetail:null,engSections:[],callList:[],settings:null,templates:[],activeTemplate:'all_received',questionnaires:[],activeTypeCode:'1040',rosterData:[],settingsTab:'firm',checklistTypeCode:'1040',checklistSections:[],loading:true};
+let S={authState:'loading',authError:'',userEmail:'',mfaFactorId:null,mfaQR:null,mfaChallengeId:null,page:'dashboard',modal:null,search:'',filterType:'all',filterCat:'all',summary:{total_active:0,ready_to_prepare:0,waiting:0,on_call_list:0},dashClients:[],allClients:[],engTypes:[],clientEngagements:[],selectedClientId:null,selectedEngId:null,engDetail:null,engSections:[],callList:[],settings:null,templates:[],activeTemplate:'all_received',questionnaires:[],activeTypeCode:'1040',rosterData:[],settingsTab:'firm',checklistTypeCode:'1040',checklistSections:[],loading:true};
 function set(u){Object.assign(S,u);render()}
 function esc(s){let d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function catClass(c){return c==='Tax'?'cat-tax':c==='Advisory'?'cat-advisory':'cat-formation'}
+
+// ── AUTH ──
+async function checkAuth(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){set({authState:'login'});return}
+  S.userEmail=session.user.email;
+  // Check MFA level
+  const{data:aal}=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal.currentLevel==='aal1'&&aal.nextLevel==='aal2'){
+    // MFA enrolled but not verified this session — need code
+    const factors=await sb.auth.mfa.listFactors();
+    const totp=factors.data.totp[0];
+    if(totp){
+      S.mfaFactorId=totp.id;
+      const{data:challenge}=await sb.auth.mfa.challenge({factorId:totp.id});
+      S.mfaChallengeId=challenge.id;
+      set({authState:'mfa-verify'});
+    }else{set({authState:'authenticated'})}
+  }else if(aal.currentLevel==='aal2'){set({authState:'authenticated'})}
+  else{
+    // Check if MFA is enrolled
+    const factors=await sb.auth.mfa.listFactors();
+    if(factors.data.totp&&factors.data.totp.length>0){
+      const totp=factors.data.totp[0];
+      S.mfaFactorId=totp.id;
+      const{data:challenge}=await sb.auth.mfa.challenge({factorId:totp.id});
+      S.mfaChallengeId=challenge.id;
+      set({authState:'mfa-verify'});
+    }else{set({authState:'mfa-enroll'})}
+  }
+}
+async function signIn(email,password){
+  set({authError:''});
+  const{data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){set({authError:error.message});return}
+  S.userEmail=email;
+  await checkAuth();
+}
+async function enrollMFA(){
+  set({authError:''});
+  const{data,error}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'H4 Authenticator'});
+  if(error){set({authError:error.message});return}
+  S.mfaFactorId=data.id;S.mfaQR=data.totp.qr_code;
+  set({authState:'mfa-enroll-scan'});
+}
+async function verifyMFAEnroll(code){
+  set({authError:''});
+  const{data:challenge}=await sb.auth.mfa.challenge({factorId:S.mfaFactorId});
+  const{data,error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:challenge.id,code});
+  if(error){set({authError:'Invalid code. Try again.'});return}
+  set({authState:'authenticated'});
+}
+async function verifyMFA(code){
+  set({authError:''});
+  const{data,error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:S.mfaChallengeId,code});
+  if(error){set({authError:'Invalid code. Try again.'});return}
+  set({authState:'authenticated'});
+}
+async function signOut(){
+  await sb.auth.signOut();
+  S.authState='login';S.userEmail='';S.mfaFactorId=null;S.mfaQR=null;S.mfaChallengeId=null;
+  render();
+}
 
 // ── DATA ──
 async function loadEngTypes(){
@@ -236,11 +323,20 @@ function render(){
   const root=document.getElementById('root');
   const navItems=[{id:'dashboard',label:'Dashboard',icon:'▦'},{id:'client',label:'Client View',icon:'◉'},{id:'calllist',label:'Call List',icon:'✆'},{id:'automation',label:'Automation',icon:'⟳'},{id:'templates',label:'Templates',icon:'✉'},{id:'questionnaires',label:'Questionnaires',icon:'?'},{id:'settings',label:'Settings',icon:'⚙'}];
   const titles={dashboard:'Dashboard',client:'Client View',calllist:'Call List',automation:'Automation',templates:'Email Templates',questionnaires:'Questionnaires',settings:'Settings'};
+  // Auth screens
+  if(S.authState==='loading'){root.innerHTML='<div class="auth-page"><div class="auth-card" style="text-align:center"><div class="loading">Checking session…</div></div></div>';return}
+  if(S.authState==='login'){root.innerHTML=renderLogin();attachAuthEvents();return}
+  if(S.authState==='mfa-enroll'){root.innerHTML=renderMFASetup();attachAuthEvents();return}
+  if(S.authState==='mfa-enroll-scan'){root.innerHTML=renderMFAScan();attachAuthEvents();return}
+  if(S.authState==='mfa-verify'){root.innerHTML=renderMFAVerify();attachAuthEvents();return}
+
   let content='';
   switch(S.page){case'dashboard':content=renderDashboard();break;case'client':content=renderClientView();break;case'calllist':content=renderCallList();break;case'automation':content=renderAutomation();break;case'templates':content=renderTemplates();break;case'questionnaires':content=renderQuestionnaires();break;case'settings':content=renderSettings();break}
   root.innerHTML=`
   <aside class="sidebar"><div class="sidebar-brand"><div class="brand-icon">H4</div><div><div class="brand-name">H4 Accounting</div><div class="brand-sub">Document Portal</div></div></div>
-  <nav class="nav">${navItems.map(n=>`<button class="nav-btn ${S.page===n.id?'active':''}" data-nav="${n.id}"><span class="nav-icon">${n.icon}</span>${n.label}</button>`).join('')}</nav>
+  <div class="user-info">✦ ${esc(S.userEmail)}</div>
+  <nav class="nav">${navItems.map(n=>`<button class="nav-btn ${S.page===n.id?'active':''}" data-nav="${n.id}"><span class="nav-icon">${n.icon}</span>${n.label}</button>`).join('')}
+  <button class="logout-btn" data-action="logout"><span class="nav-icon">⏻</span>Sign out</button></nav>
   <div class="sidebar-footer">H4 Accounting LLC</div></aside>
   <div class="main"><div class="topbar"><div class="topbar-title">${titles[S.page]}</div><div class="topbar-right">
     ${S.page==='client'?`<button class="btn btn-sm" data-action="show-edit-client" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">Edit Client</button>`:''}
@@ -425,6 +521,7 @@ function renderModal(){
 
 function attachEvents(){
   document.querySelectorAll('[data-nav]').forEach(el=>{el.onclick=()=>navigate(el.dataset.nav)});
+  document.querySelectorAll('[data-action="logout"]').forEach(el=>{el.onclick=()=>signOut()});
   document.querySelectorAll('[data-action="search"]').forEach(el=>{el.oninput=()=>set({search:el.value})});
   document.querySelectorAll('[data-action="filter-type"]').forEach(el=>{el.onchange=()=>set({filterType:el.value})});
   document.querySelectorAll('[data-action="filter-cat"]').forEach(el=>{el.onchange=()=>set({filterCat:el.value})});
@@ -462,7 +559,62 @@ function attachEvents(){
   document.querySelectorAll('[data-action="remove-escalation"]').forEach(el=>{el.onclick=async()=>{await sb.from('engagements').update({escalated:false,escalated_at:null}).eq('id',el.dataset.engId);await loadCallList()}});
 }
 
-(async function(){render();await loadDashboard()})();
+// ── AUTH RENDERS ──
+function renderLogin(){
+  return`<div class="auth-page"><div class="auth-card">
+    <div class="auth-brand"><div class="brand-icon" style="width:40px;height:40px;font-size:16px;border-radius:10px;background:#1B2A4A;color:#D4A843;display:flex;align-items:center;justify-content:center;font-weight:700">H4</div><div><div class="auth-brand-text">H4 Accounting</div><div class="auth-brand-sub">Document Portal</div></div></div>
+    <div class="auth-title">Sign in</div>
+    <div class="auth-desc">Enter your credentials to access the client tracker.</div>
+    ${S.authError?`<div class="auth-error">${esc(S.authError)}</div>`:''}
+    <div class="auth-field"><label>Email</label><input id="auth-email" type="email" placeholder="you@example.com"/></div>
+    <div class="auth-field"><label>Password</label><input id="auth-pass" type="password" placeholder="••••••••"/></div>
+    <button class="auth-submit" data-action="do-login">Sign in</button>
+  </div></div>`;
+}
+function renderMFASetup(){
+  return`<div class="auth-page"><div class="auth-card">
+    <div class="auth-brand"><div class="brand-icon" style="width:40px;height:40px;font-size:16px;border-radius:10px;background:#1B2A4A;color:#D4A843;display:flex;align-items:center;justify-content:center;font-weight:700">H4</div><div><div class="auth-brand-text">H4 Accounting</div><div class="auth-brand-sub">Security Setup</div></div></div>
+    <div class="auth-title">Set up two-factor authentication</div>
+    <div class="auth-desc">For the security of your client data, we require an authenticator app. You'll need Google Authenticator or Microsoft Authenticator on your phone.</div>
+    ${S.authError?`<div class="auth-error">${esc(S.authError)}</div>`:''}
+    <button class="auth-submit" data-action="do-enroll">Set up authenticator</button>
+  </div></div>`;
+}
+function renderMFAScan(){
+  return`<div class="auth-page"><div class="auth-card">
+    <div class="auth-brand"><div class="brand-icon" style="width:40px;height:40px;font-size:16px;border-radius:10px;background:#1B2A4A;color:#D4A843;display:flex;align-items:center;justify-content:center;font-weight:700">H4</div><div><div class="auth-brand-text">H4 Accounting</div><div class="auth-brand-sub">Security Setup</div></div></div>
+    <div class="auth-title">Scan this QR code</div>
+    <div class="auth-desc">Open your authenticator app and scan the QR code below. Then enter the 6-digit code it shows.</div>
+    ${S.authError?`<div class="auth-error">${esc(S.authError)}</div>`:''}
+    <div class="qr-wrap"><img src="${S.mfaQR}" width="200" height="200" alt="QR Code"/></div>
+    <div class="auth-field"><label>6-digit code from your app</label><input id="auth-mfa-code" type="text" maxlength="6" class="mfa-code-input" placeholder="000000" autocomplete="one-time-code"/></div>
+    <button class="auth-submit" data-action="do-verify-enroll">Verify & activate</button>
+  </div></div>`;
+}
+function renderMFAVerify(){
+  return`<div class="auth-page"><div class="auth-card">
+    <div class="auth-brand"><div class="brand-icon" style="width:40px;height:40px;font-size:16px;border-radius:10px;background:#1B2A4A;color:#D4A843;display:flex;align-items:center;justify-content:center;font-weight:700">H4</div><div><div class="auth-brand-text">H4 Accounting</div><div class="auth-brand-sub">Verification</div></div></div>
+    <div class="auth-title">Enter your authentication code</div>
+    <div class="auth-desc">Open your authenticator app and enter the 6-digit code for H4 Accounting.</div>
+    ${S.authError?`<div class="auth-error">${esc(S.authError)}</div>`:''}
+    <div class="auth-field"><label>6-digit code</label><input id="auth-mfa-code" type="text" maxlength="6" class="mfa-code-input" placeholder="000000" autocomplete="one-time-code"/></div>
+    <button class="auth-submit" data-action="do-verify">Verify</button>
+    <div style="text-align:center;margin-top:14px"><button style="background:none;border:none;color:#6B7280;font-size:12px;cursor:pointer;font-family:inherit" data-action="do-signout-retry">Sign in with a different account</button></div>
+  </div></div>`;
+}
+function attachAuthEvents(){
+  document.querySelectorAll('[data-action="do-login"]').forEach(el=>{el.onclick=()=>{const e=document.getElementById('auth-email')?.value;const p=document.getElementById('auth-pass')?.value;if(!e||!p){set({authError:'Please enter email and password'});return}signIn(e,p)}});
+  document.querySelectorAll('[data-action="do-enroll"]').forEach(el=>{el.onclick=()=>enrollMFA()});
+  document.querySelectorAll('[data-action="do-verify-enroll"]').forEach(el=>{el.onclick=()=>{const c=document.getElementById('auth-mfa-code')?.value;if(!c||c.length!==6){set({authError:'Enter a 6-digit code'});return}verifyMFAEnroll(c)}});
+  document.querySelectorAll('[data-action="do-verify"]').forEach(el=>{el.onclick=()=>{const c=document.getElementById('auth-mfa-code')?.value;if(!c||c.length!==6){set({authError:'Enter a 6-digit code'});return}verifyMFA(c)}});
+  document.querySelectorAll('[data-action="do-signout-retry"]').forEach(el=>{el.onclick=()=>signOut()});
+  // Allow Enter key on inputs
+  document.getElementById('auth-pass')?.addEventListener('keydown',e=>{if(e.key==='Enter'){const em=document.getElementById('auth-email')?.value;const p=document.getElementById('auth-pass')?.value;if(em&&p)signIn(em,p)}});
+  document.getElementById('auth-mfa-code')?.addEventListener('keydown',e=>{if(e.key==='Enter'){const c=document.getElementById('auth-mfa-code')?.value;if(c&&c.length===6){if(S.authState==='mfa-enroll-scan')verifyMFAEnroll(c);else verifyMFA(c)}}});
+}
+
+// ── INIT ──
+(async function(){render();await checkAuth();if(S.authState==='authenticated'){await loadDashboard()}})();
 </script>
 </body>
 </html>
