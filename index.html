@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H4 Accounting — Client Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.49.1/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        navy: '#1B2A4A',
+        'navy-light': '#243556',
+        gold: '#D4A843',
+        'gold-light': '#F5EDD6',
+        'blue-soft': '#E8EDF5',
+        'status-green': '#22C55E',
+        'status-orange': '#F59E0B',
+        'status-red': '#EF4444',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; background: #F7F8FC; }
+  .progress-bar { transition: width 0.5s ease; }
+  .nav-item { transition: all 0.15s ease; }
+  .nav-item:hover { background: rgba(255,255,255,0.1); }
+  .nav-item.active { background: rgba(255,255,255,0.15); border-left: 3px solid #D4A843; }
+  .doc-btn { transition: all 0.15s ease; cursor: pointer; }
+  .doc-btn:hover { transform: translateY(-1px); }
+  .doc-btn.received { background: #DEF7EC; color: #03543F; border-color: #84E1BC; }
+  .doc-btn.needed { background: #FDF6B2; color: #723B13; border-color: #FCE96A; }
+  .doc-btn.na { background: #F3F4F6; color: #6B7280; border-color: #D1D5DB; }
+  .card-shadow { box-shadow: 0 1px 3px rgba(27,42,74,0.08), 0 1px 2px rgba(27,42,74,0.06); }
+  .fade-in { animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useMemo } = React;
+
+// ── Supabase client ──
+const SUPABASE_URL = 'https://grmynepeyoeyvjpaityw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdybXluZXBleW9leXZqcGFpdHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MjQ3NjAsImV4cCI6MjEwNTIwMDc2MH0.3SgjI69FvcsmSM2Em1PF4NYWo8Plq5fa-dpxnCfzbPY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Navigation ──
+const NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', icon: '▦' },
+  { id: 'client', label: 'Client View', icon: '◉' },
+  { id: 'calllist', label: 'Call List', icon: '✆' },
+  { id: 'automation', label: 'Automation', icon: '⟳' },
+  { id: 'templates', label: 'Templates', icon: '✉' },
+  { id: 'questionnaires', label: 'Questionnaires', icon: '?' },
+  { id: 'settings', label: 'Settings', icon: '⚙' },
+];
+
+// ═══════════════════════════════════════════
+// MAIN APP
+// ═══════════════════════════════════════════
+function App() {
+  const [page, setPage] = useState('dashboard');
+  const [selectedClientId, setSelectedClientId] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const navigateToClient = (clientId) => {
+    setSelectedClientId(clientId);
+    setPage('client');
+  };
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      {/* Sidebar */}
+      <aside className={`${sidebarOpen ? 'w-56' : 'w-0'} bg-navy flex-shrink-0 flex flex-col transition-all duration-200 overflow-hidden`}>
+        <div className="p-4 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center text-gold font-bold text-sm">H4</div>
+            <div>
+              <div className="text-white font-semibold text-sm leading-tight">H4 Accounting</div>
+              <div className="text-gold text-xs">Document Portal</div>
+            </div>
+          </div>
+        </div>
+        <nav className="flex-1 py-2">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setPage(item.id)}
+              className={`nav-item w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm ${page === item.id ? 'active text-white' : 'text-white/60'}`}
+            >
+              <span className="text-base w-5 text-center">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div className="p-4 border-t border-white/10">
+          <div className="text-white/40 text-xs">Tax Year 2026</div>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="sticky top-0 z-10 bg-navy/95 backdrop-blur px-6 py-3 flex items-center justify-between">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white/60 hover:text-white mr-4">☰</button>
+          <h1 className="text-white font-semibold text-lg flex-1">
+            {NAV_ITEMS.find(n => n.id === page)?.label}
+          </h1>
+          <div className="flex items-center gap-3">
+            <span className="text-white/50 text-sm">Tax Year</span>
+            <select className="bg-white/10 text-white text-sm rounded px-2 py-1 border border-white/20">
+              <option>2026</option>
+              <option>2025</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="p-6 fade-in">
+          {page === 'dashboard' && <DashboardPage onSelectClient={navigateToClient} />}
+          {page === 'client' && <ClientViewPage selectedClientId={selectedClientId} setSelectedClientId={setSelectedClientId} />}
+          {page === 'calllist' && <CallListPage onSelectClient={navigateToClient} />}
+          {page === 'automation' && <AutomationPage />}
+          {page === 'templates' && <TemplatesPage />}
+          {page === 'questionnaires' && <QuestionnairesPage />}
+          {page === 'settings' && <SettingsPage />}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD PAGE
+// ═══════════════════════════════════════════
+function DashboardPage({ onSelectClient }) {
+  const [summary, setSummary] = useState({ total_active: 0, ready_to_prepare: 0, waiting: 0, on_call_list: 0 });
+  const [clients, setClients] = useState([]);
+  const [search, setSearch] = useState('');
+  const [filterReturn, setFilterReturn] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data: s } = await sb.from('v_dashboard_summary').select('*').single();
+    if (s) setSummary(s);
+
+    const { data: c } = await sb.from('v_client_dashboard').select('*').eq('status', 'Active').order('name');
+    if (c) setClients(c);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = useMemo(() => {
+    return clients.filter(c => {
+      const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.email && c.email.toLowerCase().includes(search.toLowerCase()));
+      const matchReturn = filterReturn === 'all' || c.return_type === filterReturn;
+      return matchSearch && matchReturn;
+    });
+  }, [clients, search, filterReturn]);
+
+  const cards = [
+    { label: 'Total Active', value: summary.total_active, color: 'border-navy text-navy' },
+    { label: 'Ready to Prepare', value: summary.ready_to_prepare, color: 'border-status-green text-status-green' },
+    { label: 'Waiting', value: summary.waiting, color: 'border-status-orange text-status-orange' },
+    { label: 'On Call List', value: summary.on_call_list, color: 'border-status-red text-status-red' },
+  ];
+
+  if (loading) return <div className="text-center py-20 text-gray-400">Loading dashboard…</div>;
+
+  return (
+    <div>
+      <p className="text-gray-500 text-sm mb-6">Every active client at a glance — search, filter, and jump straight in.</p>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        {cards.map(card => (
+          <div key={card.label} className={`bg-white rounded-xl border-2 ${card.color} p-4 card-shadow`}>
+            <div className="text-xs font-medium uppercase tracking-wide opacity-70">{card.label}</div>
+            <div className="text-3xl font-bold mt-1">{card.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search & filter */}
+      <div className="flex gap-3 mb-4">
+        <div className="flex-1 relative">
+          <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
+          <input
+            type="text"
+            placeholder="Search clients by name or email…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-navy focus:ring-1 focus:ring-navy/20"
+          />
+        </div>
+        <select
+          value={filterReturn}
+          onChange={e => setFilterReturn(e.target.value)}
+          className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-navy"
+        >
+          <option value="all">All returns</option>
+          <option value="1040">1040</option>
+          <option value="1065">1065</option>
+          <option value="1120-S">1120-S</option>
+        </select>
+      </div>
+
+      <div className="text-xs text-gray-400 mb-2">Showing {filtered.length} of {clients.length} clients</div>
+
+      {/* Client table */}
+      <div className="bg-white rounded-xl card-shadow overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100">
+              <th className="text-left px-4 py-3 text-gray-500 font-medium">Client ▲</th>
+              <th className="text-center px-3 py-3 text-gray-500 font-medium">Return</th>
+              <th className="text-center px-3 py-3 text-gray-500 font-medium">Status</th>
+              <th className="px-3 py-3 text-gray-500 font-medium text-center">Progress</th>
+              <th className="text-center px-3 py-3 text-gray-500 font-medium">Needed</th>
+              <th className="text-center px-3 py-3 text-gray-500 font-medium">Received</th>
+              <th className="text-right px-4 py-3 text-gray-500 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(client => {
+              const pct = client.progress_pct || 0;
+              const statusLabel = client.needed_count === 0 && client.total_applicable > 0 ? 'Ready' : 'Waiting';
+              const statusColor = statusLabel === 'Ready' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+              return (
+                <tr key={client.id} className="border-b border-gray-50 hover:bg-blue-soft/30 cursor-pointer" onClick={() => onSelectClient(client.id)}>
+                  <td className="px-4 py-3 font-medium text-navy">{client.name}</td>
+                  <td className="text-center px-3 py-3 text-gray-600">{client.return_type}</td>
+                  <td className="text-center px-3 py-3">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>{statusLabel}</span>
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="progress-bar h-full bg-navy rounded-full" style={{ width: `${pct}%` }}></div>
+                      </div>
+                      <span className="text-xs text-gray-400 w-12 text-right">{client.received_count}/{client.total_applicable}</span>
+                    </div>
+                  </td>
+                  <td className="text-center px-3 py-3"><span className={`font-semibold ${client.needed_count > 0 ? 'text-status-orange' : 'text-gray-300'}`}>{client.needed_count}</span></td>
+                  <td className="text-center px-3 py-3 text-gray-600">{client.received_count}</td>
+                  <td className="text-right px-4 py-3 text-navy/40">→</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// CLIENT VIEW PAGE
+// ═══════════════════════════════════════════
+function ClientViewPage({ selectedClientId, setSelectedClientId }) {
+  const [clients, setClients] = useState([]);
+  const [client, setClient] = useState(null);
+  const [sections, setSections] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await sb.from('clients').select('*').eq('status', 'Active').order('name');
+      if (data) {
+        setClients(data);
+        if (!selectedClientId && data.length > 0) setSelectedClientId(data[0].id);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedClientId) return;
+    loadClient(selectedClientId);
+  }, [selectedClientId]);
+
+  const loadClient = async (id) => {
+    setLoading(true);
+    const { data: c } = await sb.from('clients').select('*').eq('id', id).single();
+    if (c) setClient(c);
+
+    // Load sections + items + statuses for this client's return type
+    const { data: secs } = await sb.from('checklist_sections').select('*, checklist_items(*)').eq('return_type', c.return_type).order('sort_order');
+
+    if (secs) {
+      // Load client_documents for this client
+      const { data: docs } = await sb.from('client_documents').select('*').eq('client_id', id);
+      const docMap = {};
+      (docs || []).forEach(d => { docMap[d.checklist_item_id] = d; });
+
+      const enriched = secs.map(sec => ({
+        ...sec,
+        checklist_items: (sec.checklist_items || [])
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map(item => ({
+            ...item,
+            doc_id: docMap[item.id]?.id,
+            doc_status: docMap[item.id]?.status || 'Needed',
+          }))
+      }));
+      setSections(enriched);
+    }
+    setLoading(false);
+  };
+
+  const updateDocStatus = async (docId, itemId, newStatus) => {
+    if (docId) {
+      await sb.from('client_documents').update({ status: newStatus }).eq('id', docId);
+    } else {
+      await sb.from('client_documents').insert({ client_id: selectedClientId, checklist_item_id: itemId, status: newStatus });
+    }
+    loadClient(selectedClientId);
+  };
+
+  const neededCount = sections.reduce((sum, s) => sum + s.checklist_items.filter(i => i.doc_status === 'Needed').length, 0);
+  const phone = client?.mobile_phone || client?.work_phone || client?.home_phone;
+
+  if (loading && !client) return <div className="text-center py-20 text-gray-400">Loading…</div>;
+
+  return (
+    <div>
+      <p className="text-gray-500 text-sm mb-6">Pick a client, update their checklist, and chase what's still needed.</p>
+
+      <div className="flex gap-6">
+        {/* Left sidebar */}
+        <div className="w-72 flex-shrink-0 space-y-4">
+          <div className="bg-white rounded-xl p-4 card-shadow">
+            <div className="text-xs font-medium text-navy/50 uppercase tracking-wide mb-2">Select Client</div>
+            <select
+              value={selectedClientId || ''}
+              onChange={e => setSelectedClientId(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+            >
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+
+            {client && (
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-400">Return</span><span className="font-medium text-navy">{client.return_type}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Tax Year</span><span className="font-medium text-navy">{client.tax_year}</span></div>
+                <div className="flex justify-between items-start"><span className="text-gray-400 flex-shrink-0">Email</span><span className="font-medium text-navy text-right ml-2 break-all text-xs">{client.email || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Phone</span><span className="font-medium text-navy">{phone || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Status</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${neededCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                    {neededCount > 0 ? 'Waiting' : 'Ready'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl p-4 card-shadow space-y-2">
+            <button className="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Preview reminder</button>
+            <button className="w-full py-2.5 px-3 bg-gold text-navy rounded-lg text-sm font-semibold hover:bg-gold/90">Draft / Send reminder</button>
+            <button className="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Reset reminder cycle</button>
+            <button className="w-full py-2 px-3 border border-red-200 rounded-lg text-sm text-red-500 hover:bg-red-50">Archive client</button>
+          </div>
+        </div>
+
+        {/* Right: document checklist */}
+        <div className="flex-1 space-y-1">
+          {neededCount > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+              <span className="text-amber-800 font-medium text-sm">{neededCount} items still needed.</span>
+            </div>
+          )}
+
+          {sections.map(sec => (
+            <div key={sec.id} className="bg-white rounded-xl card-shadow mb-4 overflow-hidden">
+              <div className="bg-blue-soft/50 px-4 py-2.5 border-b border-gray-100">
+                <h3 className="font-semibold text-navy text-sm">{sec.name}</h3>
+              </div>
+              <div>
+                {sec.checklist_items.map(item => (
+                  <div key={item.id} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0">
+                    <div className="flex-1 mr-4">
+                      <div className="text-sm text-gray-800">{item.name}</div>
+                      <div className="text-xs text-navy/40 uppercase">{item.send_via}</div>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {['Received', 'Needed', 'N/A'].map(status => (
+                        <button
+                          key={status}
+                          onClick={() => updateDocStatus(item.doc_id, item.id, status)}
+                          className={`doc-btn px-3 py-1 rounded-md text-xs font-medium border ${
+                            item.doc_status === status
+                              ? status === 'Received' ? 'received' : status === 'Needed' ? 'needed' : 'na'
+                              : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// CALL LIST PAGE
+// ═══════════════════════════════════════════
+function CallListPage({ onSelectClient }) {
+  const [callList, setCallList] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await sb.from('v_call_list').select('*');
+    setCallList(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const markCalled = async (clientId) => {
+    await sb.from('call_log').insert({ client_id: clientId, notes: 'Called' });
+    load();
+  };
+
+  const removeFromList = async (clientId) => {
+    await sb.from('clients').update({ escalated: false, escalated_at: null }).eq('id', clientId);
+    load();
+  };
+
+  if (loading) return <div className="text-center py-20 text-gray-400">Loading…</div>;
+
+  return (
+    <div>
+      <p className="text-gray-500 text-sm mb-6">Clients who hit the escalation threshold with documents still missing. Automated emails have stopped — call them directly.</p>
+
+      {callList.length === 0 ? (
+        <div className="bg-white rounded-xl card-shadow p-12 text-center">
+          <div className="text-4xl mb-3">✓</div>
+          <div className="text-gray-500">No clients on the call list right now.</div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {callList.map(c => {
+            const phone = c.mobile_phone || c.work_phone || c.home_phone;
+            return (
+              <div key={c.id} className="bg-white rounded-xl card-shadow p-5 border-l-4 border-gold">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-semibold text-navy text-lg cursor-pointer hover:underline" onClick={() => onSelectClient(c.id)}>{c.name}</h3>
+                    <div className="text-sm text-gray-500">{c.return_type} · {c.email}</div>
+                  </div>
+                  {c.escalated_at && <span className="text-xs text-status-red">Escalated {new Date(c.escalated_at).toLocaleDateString()}</span>}
+                </div>
+
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">✆</span>
+                  <span className={`font-semibold ${phone ? 'text-navy' : 'text-status-red'}`}>{phone || 'No phone on file'}</span>
+                </div>
+
+                <div className="text-sm text-gray-500 mb-4">▸ {c.missing_count} documents still missing</div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Call Notes</label>
+                    <input
+                      className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+                      placeholder="Left voicemail / will upload by Friday…"
+                      defaultValue={c.call_notes || ''}
+                      onBlur={async (e) => {
+                        await sb.from('clients').update({ call_notes: e.target.value }).eq('id', c.id);
+                      }}
+                    />
+                  </div>
+                  <button onClick={() => markCalled(c.id)} className="mt-5 px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light">Mark called</button>
+                  <button onClick={() => removeFromList(c.id)} className="mt-5 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Remove from list</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// AUTOMATION PAGE
+// ═══════════════════════════════════════════
+function AutomationPage() {
+  const [settings, setSettings] = useState(null);
+  const [roster, setRoster] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data: s } = await sb.from('firm_settings').select('*').single();
+      if (s) setSettings(s);
+
+      const { data: c } = await sb.from('v_client_dashboard').select('*').eq('status', 'Active').order('name');
+      if (c) setRoster(c);
+      setLoading(false);
+    })();
+  }, []);
+
+  const updateSetting = async (field, value) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+    await sb.from('firm_settings').update({ [field]: value }).eq('id', settings.id);
+  };
+
+  const toggleRoster = async (clientId, current) => {
+    await sb.from('clients').update({ on_reminder_roster: !current }).eq('id', clientId);
+    setRoster(prev => prev.map(c => c.id === clientId ? { ...c, on_reminder_roster: !current } : c));
+  };
+
+  if (loading || !settings) return <div className="text-center py-20 text-gray-400">Loading…</div>;
+
+  const rosterCount = roster.filter(c => c.on_reminder_roster).length;
+
+  return (
+    <div>
+      <p className="text-gray-500 text-sm mb-6">The Day 1 / 3 / 10 reminder engine. It runs automatically once a day (~9 AM ET).</p>
+
+      {/* How it works */}
+      <div className="bg-gold-light rounded-xl p-5 mb-6 card-shadow">
+        <h3 className="font-semibold text-navy mb-2">How the daily automation works</h3>
+        <ol className="text-sm text-gray-700 space-y-1 list-decimal pl-5">
+          <li><b>Connect your mailbox</b> in Settings → Email connection (Outlook or Gmail).</li>
+          <li><b>Set up each client's documents</b> in Client View — mark every item Received or Needed.</li>
+          <li><b>Pick who's included</b> in the Reminder roster below.</li>
+          <li><b>Choose Send mode</b> — Draft or Auto-send.</li>
+          <li><b>Turn on Daily automation.</b> Each morning it emails/drafts Reminder 1 on day 1, Reminder 2 on day 3, and adds clients to the Call List on day 10.</li>
+        </ol>
+      </div>
+
+      {/* Mode toggles */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-5 card-shadow">
+          <h4 className="font-semibold text-navy mb-1">Send mode</h4>
+          <p className="text-xs text-gray-500 mb-3">Draft mode: each reminder is saved as a draft in {settings.email_provider} for you to review and send.</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => updateSetting('send_mode', settings.send_mode === 'draft' ? 'auto' : 'draft')}
+              className={`relative w-12 h-6 rounded-full transition-colors ${settings.send_mode === 'auto' ? 'bg-navy' : 'bg-gray-300'}`}
+            >
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.send_mode === 'auto' ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+            </button>
+            <span className="text-sm text-gray-600">{settings.send_mode === 'draft' ? 'Draft mode' : 'Auto-send'}</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl p-5 card-shadow">
+          <h4 className="font-semibold text-navy mb-1">Daily automation</h4>
+          <p className="text-xs text-gray-500 mb-3">Active — runs each day at ~9 AM ET.</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => updateSetting('daily_automation', !settings.daily_automation)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${settings.daily_automation ? 'bg-navy' : 'bg-gray-300'}`}
+            >
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.daily_automation ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
+            </button>
+            <span className="text-sm text-gray-600">{settings.daily_automation ? 'Active' : 'Paused'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Reminder schedule */}
+      <div className="bg-white rounded-xl p-5 card-shadow mb-6">
+        <h4 className="font-semibold text-navy mb-4">Reminder schedule</h4>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: 'Reminder #1 (Gentle Nudge)', field: 'reminder_1_days', color: 'border-gold' },
+            { label: 'Reminder #2 (Deadline)', field: 'reminder_2_days', color: 'border-navy' },
+            { label: 'Escalate / Call List', field: 'escalation_days', color: 'border-status-red' },
+          ].map(r => (
+            <div key={r.field} className={`border-2 ${r.color} rounded-xl p-4`}>
+              <div className="text-xs font-medium text-navy/60 uppercase tracking-wide mb-2">{r.label}</div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={settings[r.field]}
+                  onChange={e => updateSetting(r.field, parseInt(e.target.value) || 0)}
+                  className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-center text-sm font-medium focus:outline-none focus:border-navy"
+                />
+                <span className="text-sm text-gray-500">days after start</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reminder roster */}
+      <div className="bg-white rounded-xl card-shadow overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h4 className="font-semibold text-navy">Reminder roster</h4>
+            <p className="text-xs text-gray-500 mt-0.5">Only checked clients receive automated reminders. {rosterCount} of {roster.length} active clients receiving reminders.</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={async () => { await sb.from('clients').update({ on_reminder_roster: true }).eq('status', 'Active'); setRoster(prev => prev.map(c => ({ ...c, on_reminder_roster: true }))); }} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs hover:bg-gray-50">Select all</button>
+            <button onClick={async () => { await sb.from('clients').update({ on_reminder_roster: false }).eq('status', 'Active'); setRoster(prev => prev.map(c => ({ ...c, on_reminder_roster: false }))); }} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs hover:bg-gray-50">Clear all</button>
+          </div>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500 text-xs">
+              <th className="px-5 py-2 text-left">On</th>
+              <th className="px-3 py-2 text-left">Client</th>
+              <th className="px-3 py-2 text-center">Return</th>
+              <th className="px-3 py-2 text-center">Missing</th>
+              <th className="px-3 py-2 text-left">Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {roster.map(c => (
+              <tr key={c.id} className="border-b border-gray-50">
+                <td className="px-5 py-2">
+                  <input type="checkbox" checked={!!c.on_reminder_roster} onChange={() => toggleRoster(c.id, c.on_reminder_roster)} className="rounded" />
+                </td>
+                <td className="px-3 py-2 text-navy font-medium">{c.name}</td>
+                <td className="px-3 py-2 text-center text-gray-600">{c.return_type}</td>
+                <td className="px-3 py-2 text-center">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${c.needed_count > 10 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{c.needed_count}</span>
+                </td>
+                <td className="px-3 py-2 text-gray-500 text-xs">{c.email}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// TEMPLATES PAGE
+// ═══════════════════════════════════════════
+function TemplatesPage() {
+  const [templates, setTemplates] = useState([]);
+  const [activeType, setActiveType] = useState('all_received');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await sb.from('email_templates').select('*');
+      if (data) setTemplates(data);
+      setLoading(false);
+    })();
+  }, []);
+
+  const active = templates.find(t => t.template_type === activeType);
+
+  const updateField = async (field, value) => {
+    setTemplates(prev => prev.map(t => t.template_type === activeType ? { ...t, [field]: value } : t));
+    await sb.from('email_templates').update({ [field]: value }).eq('template_type', activeType);
+  };
+
+  const tabs = [
+    { type: 'all_received', label: 'All documents received' },
+    { type: 'escalation', label: 'Escalation alert' },
+    { type: 'reminder_1', label: 'Reminder #1 — gentle nudge' },
+    { type: 'reminder_2', label: 'Reminder #2 — deadline' },
+  ];
+
+  if (loading) return <div className="text-center py-20 text-gray-400">Loading…</div>;
+
+  return (
+    <div>
+      <p className="text-gray-500 text-sm mb-6">Type the wording in plain text — the system formats it into the branded H4 email automatically.</p>
+
+      <div className="flex gap-2 mb-6 flex-wrap">
+        {tabs.map(tab => (
+          <button
+            key={tab.type}
+            onClick={() => setActiveType(tab.type)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeType === tab.type ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {active && (
+        <div className="grid grid-cols-2 gap-6">
+          {/* Editor */}
+          <div className="bg-white rounded-xl p-5 card-shadow space-y-4">
+            <div>
+              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Template Name</label>
+              <input value={active.template_name} onChange={e => updateField('template_name', e.target.value)} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy" />
+              <p className="text-xs text-gray-400 mt-1">Internal label only — clients never see this.</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Subject Line</label>
+              <input value={active.subject_line} onChange={e => updateField('subject_line', e.target.value)} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Header Title</label>
+              <input value={active.header_title || ''} onChange={e => updateField('header_title', e.target.value)} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Message</label>
+              <textarea value={active.message_body} onChange={e => updateField('message_body', e.target.value)} rows={10} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy resize-none" />
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="bg-white rounded-xl card-shadow overflow-hidden">
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <span className="text-xs text-gray-400 uppercase tracking-wide">Subject Preview</span>
+              <div className="text-sm font-medium text-navy mt-0.5">{active.subject_line.replace('{{returnType}}', '1040').replace('{{clientName}}', 'Sample Client, LLC')}</div>
+            </div>
+            <div className="p-6">
+              <div className="bg-navy rounded-lg px-5 py-4 mb-6">
+                <div className="text-white font-bold text-lg">H4 Accounting LLC</div>
+                <div className="text-gold text-sm">{active.header_title}</div>
+              </div>
+              <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
+                {active.message_body
+                  .replace(/\{\{clientName\}\}/g, 'Sample Client, LLC')
+                  .replace(/\{\{returnType\}\}/g, '1040')
+                  .replace(/\{\{missingDocs\}\}/g, '• Prior year tax return\n• W-2 wages\n• Photo ID / SSNs')
+                  .replace(/\{\{missingCount\}\}/g, '3')}
+              </div>
+              <div className="mt-6 bg-gold-light rounded-lg p-4">
+                <div className="text-sm font-semibold text-navy">Payment Instructions</div>
+                <div className="text-xs text-gray-600 mt-1">Preferred payment method is through Zelle ID <b>hari_rad@live.com</b></div>
+              </div>
+              <div className="mt-6 text-xs text-gray-500">
+                <div className="font-semibold">Hariharan Subrahmanyan, CPA</div>
+                <div>H4 Accounting LLC · VA CPA License #50482</div>
+                <div>hari_rad@live.com · 540-454-7216</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// QUESTIONNAIRES PAGE
+// ═══════════════════════════════════════════
+function QuestionnairesPage() {
+  const [questions, setQuestions] = useState([]);
+  const [activeReturn, setActiveReturn] = useState('1040');
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    const { data } = await sb.from('questionnaires').select('*').order('sort_order');
+    if (data) setQuestions(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = questions.filter(q => q.return_type === activeReturn);
+
+  const addQuestion = async () => {
+    const maxOrder = Math.max(0, ...filtered.map(q => q.sort_order));
+    await sb.from('questionnaires').insert({ return_type: activeReturn, question: 'New question?', sort_order: maxOrder + 1 });
+    load();
+  };
+
+  const removeQuestion = async (id) => {
+    await sb.from('questionnaires').delete().eq('id', id);
+    load();
+  };
+
+  const updateQuestion = async (id, value) => {
+    setQuestions(prev => prev.map(q => q.id === id ? { ...q, question: value } : q));
+    await sb.from('questionnaires').update({ question: value }).eq('id', id);
+  };
+
+  if (loading) return <div className="text-center py-20 text-gray-400">Loading…</div>;
+
+  return (
+    <div>
+      <p className="text-gray-500 text-sm mb-6">Life-changes questions to send first — they catch surprises before you start a return.</p>
+
+      <div className="flex gap-2 mb-6">
+        {['1040', '1065', '1120-S'].map(rt => (
+          <button
+            key={rt}
+            onClick={() => setActiveReturn(rt)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeReturn === rt ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+          >
+            Form {rt}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-xl card-shadow overflow-hidden">
+        {filtered.map((q, i) => (
+          <div key={q.id} className="flex items-center gap-3 px-5 py-3 border-b border-gray-50">
+            <span className="text-navy/40 text-sm font-medium w-6">{i + 1}.</span>
+            <input
+              value={q.question}
+              onChange={e => updateQuestion(q.id, e.target.value)}
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+            />
+            <button onClick={() => removeQuestion(q.id)} className="text-gray-300 hover:text-red-400 text-lg">×</button>
+          </div>
+        ))}
+        <div className="px-5 py-4 flex gap-3">
+          <button onClick={addQuestion} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">+ Add question</button>
+          <button className="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light">Save questionnaire</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS PAGE
+// ═══════════════════════════════════════════
+function SettingsPage() {
+  const [settings, setSettings] = useState(null);
+  const [activeTab, setActiveTab] = useState('firm');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await sb.from('firm_settings').select('*').single();
+      if (data) setSettings(data);
+      setLoading(false);
+    })();
+  }, []);
+
+  const updateSetting = async (field, value) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+    await sb.from('firm_settings').update({ [field]: value }).eq('id', settings.id);
+  };
+
+  if (loading || !settings) return <div className="text-center py-20 text-gray-400">Loading…</div>;
+
+  const tabs = [
+    { id: 'firm', label: 'Firm & Email' },
+    { id: 'checklist', label: 'Checklist Master' },
+    { id: 'attachments', label: 'Attachments' },
+    { id: 'data', label: 'Data' },
+  ];
+
+  return (
+    <div>
+      <p className="text-gray-500 text-sm mb-6">Firm details, email connection, and the master checklists every new client inherits.</p>
+
+      <div className="flex gap-2 mb-6">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeTab === tab.id ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'firm' && (
+        <div className="bg-white rounded-xl p-6 card-shadow max-w-xl space-y-4">
+          {[
+            { label: 'Firm Name', field: 'firm_name' },
+            { label: 'Owner / CPA Name', field: 'owner_name' },
+            { label: 'License Info', field: 'license_info' },
+            { label: 'Email', field: 'email' },
+            { label: 'Phone', field: 'phone' },
+            { label: 'Zelle ID', field: 'zelle_id' },
+            { label: 'Connected Email', field: 'connected_email' },
+          ].map(f => (
+            <div key={f.field}>
+              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">{f.label}</label>
+              <input
+                value={settings[f.field] || ''}
+                onChange={e => updateSetting(f.field, e.target.value)}
+                className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'checklist' && <ChecklistMasterSettings />}
+
+      {activeTab === 'attachments' && (
+        <div className="bg-white rounded-xl p-6 card-shadow">
+          <h3 className="font-semibold text-navy mb-2">Reminder attachments</h3>
+          <p className="text-sm text-gray-500 mb-4">Upload files (PDF, images, etc.) to attach to every client's reminder emails.</p>
+          <button className="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light">+ Upload files</button>
+          <span className="ml-3 text-sm text-gray-400">0 attachments</span>
+        </div>
+      )}
+
+      {activeTab === 'data' && (
+        <div className="bg-white rounded-xl p-6 card-shadow space-y-4">
+          <h3 className="font-semibold text-navy mb-2">Data Management</h3>
+          <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Download CSV</button>
+          <button className="ml-3 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Upload CSV</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChecklistMasterSettings() {
+  const [sections, setSections] = useState([]);
+  const [activeReturn, setActiveReturn] = useState('1040');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await sb.from('checklist_sections').select('*, checklist_items(*)').order('sort_order');
+      if (data) setSections(data.map(s => ({ ...s, checklist_items: (s.checklist_items || []).sort((a, b) => a.sort_order - b.sort_order) })));
+    })();
+  }, []);
+
+  const filtered = sections.filter(s => s.return_type === activeReturn);
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">
+        {['1040', '1065', '1120-S'].map(rt => (
+          <button
+            key={rt}
+            onClick={() => setActiveReturn(rt)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${activeReturn === rt ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+          >
+            Form {rt}
+          </button>
+        ))}
+      </div>
+
+      {filtered.map(sec => (
+        <div key={sec.id} className="bg-white rounded-xl card-shadow mb-4 overflow-hidden">
+          <div className="bg-blue-soft/50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+            <h4 className="font-semibold text-navy text-sm">{sec.name}</h4>
+          </div>
+          {sec.checklist_items.map(item => (
+            <div key={item.id} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
+              <span className="text-sm text-gray-700 flex-1">{item.name}</span>
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{item.send_via}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Mount ──
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
