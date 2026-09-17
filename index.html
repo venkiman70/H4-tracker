@@ -4,971 +4,848 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>H4 Accounting — Client Tracker</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.9/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.49.1/umd/supabase.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        navy: '#1B2A4A',
-        'navy-light': '#243556',
-        gold: '#D4A843',
-        'gold-light': '#F5EDD6',
-        'blue-soft': '#E8EDF5',
-        'status-green': '#22C55E',
-        'status-orange': '#F59E0B',
-        'status-red': '#EF4444',
-      },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      }
-    }
-  }
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body { font-family: 'Inter', system-ui, sans-serif; background: #F7F8FC; }
-  .progress-bar { transition: width 0.5s ease; }
-  .nav-item { transition: all 0.15s ease; }
-  .nav-item:hover { background: rgba(255,255,255,0.1); }
-  .nav-item.active { background: rgba(255,255,255,0.15); border-left: 3px solid #D4A843; }
-  .doc-btn { transition: all 0.15s ease; cursor: pointer; }
-  .doc-btn:hover { transform: translateY(-1px); }
-  .doc-btn.received { background: #DEF7EC; color: #03543F; border-color: #84E1BC; }
-  .doc-btn.needed { background: #FDF6B2; color: #723B13; border-color: #FCE96A; }
-  .doc-btn.na { background: #F3F4F6; color: #6B7280; border-color: #D1D5DB; }
-  .card-shadow { box-shadow: 0 1px 3px rgba(27,42,74,0.08), 0 1px 2px rgba(27,42,74,0.06); }
-  .fade-in { animation: fadeIn 0.25s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #F7F8FC; color: #1B2A4A; height: 100vh; overflow: hidden; }
+
+/* Layout */
+.app { display: flex; height: 100vh; }
+.sidebar { width: 220px; background: #1B2A4A; flex-shrink: 0; display: flex; flex-direction: column; overflow: hidden; }
+.sidebar-brand { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
+.brand-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(212,168,67,0.2); display: flex; align-items: center; justify-content: center; color: #D4A843; font-weight: 700; font-size: 13px; }
+.brand-name { color: #fff; font-size: 14px; font-weight: 600; line-height: 1.2; }
+.brand-sub { color: #D4A843; font-size: 11px; }
+.nav { flex: 1; padding: 8px 0; overflow-y: auto; }
+.nav-btn { width: 100%; text-align: left; padding: 10px 16px; border: none; background: none; color: rgba(255,255,255,0.5); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: inherit; border-left: 3px solid transparent; transition: all 0.15s; }
+.nav-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+.nav-btn.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: #D4A843; }
+.nav-icon { width: 18px; text-align: center; font-size: 14px; }
+.sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); font-size: 11px; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { background: rgba(27,42,74,0.95); padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.topbar-title { color: #fff; font-size: 16px; font-weight: 600; flex: 1; }
+.topbar select { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 13px; font-family: inherit; }
+.topbar-label { color: rgba(255,255,255,0.5); font-size: 13px; }
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* Cards */
+.card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.summary-card { background: #fff; border-radius: 12px; border: 2px solid #E5E7EB; padding: 16px; box-shadow: 0 1px 3px rgba(27,42,74,0.06); }
+.summary-card .label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+.summary-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+.sc-navy { border-color: #1B2A4A; color: #1B2A4A; }
+.sc-green { border-color: #22C55E; color: #22C55E; }
+.sc-orange { border-color: #F59E0B; color: #F59E0B; }
+.sc-red { border-color: #EF4444; color: #EF4444; }
+
+/* Search bar */
+.search-row { display: flex; gap: 12px; margin-bottom: 14px; }
+.search-input { flex: 1; padding: 10px 14px 10px 36px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239CA3AF'%3E%3Cpath fill-rule='evenodd' d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z'/%3E%3C/svg%3E") no-repeat 10px center / 16px; }
+.search-input:focus { border-color: #1B2A4A; box-shadow: 0 0 0 2px rgba(27,42,74,0.1); }
+.filter-select { padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; cursor: pointer; }
+.showing-text { font-size: 11px; color: #9CA3AF; margin-bottom: 6px; }
+
+/* Table */
+.table-wrap { border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+thead th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 500; color: #6B7280; border-bottom: 1px solid #F3F4F6; }
+thead th.center { text-align: center; }
+tbody tr { border-bottom: 1px solid #F9FAFB; cursor: pointer; transition: background 0.1s; }
+tbody tr:hover { background: rgba(232,237,245,0.3); }
+tbody td { padding: 10px 14px; font-size: 13px; }
+tbody td.center { text-align: center; }
+.client-name { font-weight: 500; color: #1B2A4A; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+.badge-green { background: #DEF7EC; color: #03543F; }
+.badge-amber { background: #FDF6B2; color: #92400E; }
+.badge-red { background: #FEE2E2; color: #991B1B; }
+.progress-wrap { display: flex; align-items: center; gap: 8px; }
+.progress-bar-bg { flex: 1; height: 6px; background: #F3F4F6; border-radius: 3px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: #1B2A4A; border-radius: 3px; transition: width 0.4s ease; }
+.progress-text { font-size: 11px; color: #9CA3AF; min-width: 40px; text-align: right; }
+.needed-count { font-weight: 600; }
+.needed-count.has-needed { color: #F59E0B; }
+.needed-count.none { color: #D1D5DB; }
+.arrow-cell { color: rgba(27,42,74,0.3); text-align: right; }
+
+/* Client View */
+.client-layout { display: flex; gap: 24px; }
+.client-sidebar { width: 280px; flex-shrink: 0; }
+.client-sidebar > * + * { margin-top: 14px; }
+.client-info-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
+.info-label { font-size: 11px; font-weight: 500; color: rgba(27,42,74,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.client-select { width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; }
+.client-select:focus { border-color: #1B2A4A; }
+.info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+.info-key { color: #9CA3AF; }
+.info-val { font-weight: 500; color: #1B2A4A; text-align: right; max-width: 180px; word-break: break-all; font-size: 12px; }
+.actions-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); display: flex; flex-direction: column; gap: 8px; }
+.btn { padding: 9px 14px; border-radius: 8px; border: 1px solid #E5E7EB; background: #fff; font-size: 13px; font-family: inherit; cursor: pointer; text-align: center; transition: background 0.15s; }
+.btn:hover { background: #F9FAFB; }
+.btn-gold { background: #D4A843; color: #1B2A4A; border-color: #D4A843; font-weight: 600; }
+.btn-gold:hover { background: #c99b3a; }
+.btn-red { color: #EF4444; border-color: #FCA5A5; }
+.btn-red:hover { background: #FEF2F2; }
+.btn-navy { background: #1B2A4A; color: #fff; border-color: #1B2A4A; font-weight: 500; }
+.btn-navy:hover { background: #243556; }
+
+.client-main { flex: 1; min-width: 0; }
+.needed-banner { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; font-weight: 500; color: #92400E; }
+.section-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); margin-bottom: 14px; overflow: hidden; }
+.section-header { background: rgba(232,237,245,0.5); padding: 10px 16px; border-bottom: 1px solid #F3F4F6; font-size: 13px; font-weight: 600; color: #1B2A4A; }
+.doc-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #F9FAFB; }
+.doc-row:last-child { border-bottom: none; }
+.doc-info { flex: 1; margin-right: 14px; }
+.doc-name { font-size: 13px; color: #374151; }
+.doc-via { font-size: 10px; color: rgba(27,42,74,0.35); text-transform: uppercase; margin-top: 2px; }
+.doc-btns { display: flex; gap: 6px; }
+.doc-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid #E5E7EB; background: #fff; font-size: 11px; font-weight: 500; cursor: pointer; color: #9CA3AF; transition: all 0.15s; font-family: inherit; }
+.doc-btn:hover { transform: translateY(-1px); }
+.doc-btn.active-received { background: #DEF7EC; color: #03543F; border-color: #84E1BC; }
+.doc-btn.active-needed { background: #FDF6B2; color: #723B13; border-color: #FCE96A; }
+.doc-btn.active-na { background: #F3F4F6; color: #6B7280; border-color: #D1D5DB; }
+
+/* Call list */
+.call-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); padding: 20px; border-left: 4px solid #D4A843; margin-bottom: 14px; }
+.call-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; }
+.call-name { font-size: 17px; font-weight: 600; color: #1B2A4A; cursor: pointer; }
+.call-name:hover { text-decoration: underline; }
+.call-meta { font-size: 13px; color: #6B7280; }
+.call-escalated { font-size: 11px; color: #EF4444; }
+.call-phone { font-size: 15px; font-weight: 600; color: #1B2A4A; margin: 8px 0; }
+.call-phone.none { color: #EF4444; }
+.call-missing { font-size: 13px; color: #6B7280; margin-bottom: 14px; }
+.call-actions { display: flex; align-items: center; gap: 12px; }
+.call-notes-input { flex: 1; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none; }
+.call-notes-input:focus { border-color: #1B2A4A; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-text { color: #6B7280; font-size: 14px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn { padding: 8px 16px; border-radius: 99px; border: 1px solid #E5E7EB; background: #fff; font-size: 13px; font-family: inherit; cursor: pointer; color: #4B5563; transition: all 0.15s; }
+.tab-btn:hover { background: #F9FAFB; }
+.tab-btn.active { background: #1B2A4A; color: #fff; border-color: #1B2A4A; }
+
+/* Templates */
+.template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.template-editor { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
+.template-editor > * + * { margin-top: 14px; }
+.field-label { font-size: 11px; font-weight: 500; color: rgba(27,42,74,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.field-hint { font-size: 11px; color: #9CA3AF; margin-top: 3px; }
+.text-input { width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none; }
+.text-input:focus { border-color: #1B2A4A; box-shadow: 0 0 0 2px rgba(27,42,74,0.08); }
+.textarea { width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; outline: none; resize: none; min-height: 200px; }
+.textarea:focus { border-color: #1B2A4A; }
+.preview-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); overflow: hidden; }
+.preview-subject { background: #F9FAFB; padding: 10px 16px; border-bottom: 1px solid #F3F4F6; }
+.preview-subject-label { font-size: 10px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; }
+.preview-subject-text { font-size: 13px; font-weight: 500; color: #1B2A4A; margin-top: 2px; }
+.preview-body { padding: 24px; }
+.preview-banner { background: #1B2A4A; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+.preview-banner h3 { color: #fff; font-size: 17px; font-weight: 700; }
+.preview-banner p { color: #D4A843; font-size: 13px; margin-top: 2px; }
+.preview-message { font-size: 13px; color: #374151; white-space: pre-line; line-height: 1.7; }
+.preview-payment { background: #F5EDD6; border-radius: 8px; padding: 14px; margin-top: 20px; }
+.preview-payment h4 { font-size: 13px; font-weight: 600; color: #1B2A4A; }
+.preview-payment p { font-size: 12px; color: #4B5563; margin-top: 4px; }
+.preview-sig { margin-top: 20px; font-size: 11px; color: #6B7280; line-height: 1.6; }
+.preview-sig strong { color: #1B2A4A; }
+
+/* Automation */
+.info-box { background: #F5EDD6; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(27,42,74,0.06); }
+.info-box h3 { font-weight: 600; color: #1B2A4A; margin-bottom: 8px; font-size: 14px; }
+.info-box ol { padding-left: 20px; font-size: 13px; color: #374151; line-height: 1.8; }
+.toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.toggle-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
+.toggle-card h4 { font-weight: 600; color: #1B2A4A; margin-bottom: 4px; font-size: 14px; }
+.toggle-card p { font-size: 12px; color: #6B7280; margin-bottom: 12px; }
+.toggle-row { display: flex; align-items: center; gap: 10px; }
+.toggle { position: relative; width: 44px; height: 24px; border-radius: 12px; background: #D1D5DB; cursor: pointer; border: none; transition: background 0.2s; }
+.toggle.on { background: #1B2A4A; }
+.toggle-knob { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; }
+.toggle.on .toggle-knob { transform: translateX(20px); }
+.toggle-label { font-size: 13px; color: #4B5563; }
+.schedule-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.schedule-card { border: 2px solid #E5E7EB; border-radius: 12px; padding: 16px; }
+.schedule-card.gold { border-color: #D4A843; }
+.schedule-card.navy { border-color: #1B2A4A; }
+.schedule-card.red { border-color: #EF4444; }
+.schedule-label { font-size: 11px; font-weight: 500; color: rgba(27,42,74,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.schedule-input-row { display: flex; align-items: center; gap: 8px; }
+.schedule-input { width: 60px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 6px; text-align: center; font-size: 13px; font-weight: 500; font-family: inherit; outline: none; }
+.schedule-input:focus { border-color: #1B2A4A; }
+.schedule-suffix { font-size: 13px; color: #6B7280; }
+
+/* Roster */
+.roster-header { padding: 16px 20px; border-bottom: 1px solid #F3F4F6; display: flex; justify-content: space-between; align-items: center; }
+.roster-title { font-weight: 600; color: #1B2A4A; font-size: 14px; }
+.roster-sub { font-size: 12px; color: #6B7280; margin-top: 2px; }
+.roster-actions { display: flex; gap: 8px; }
+.roster-table { width: 100%; border-collapse: collapse; }
+.roster-table th { text-align: left; padding: 8px 20px; font-size: 11px; font-weight: 500; color: #6B7280; background: #F9FAFB; }
+.roster-table th.center { text-align: center; }
+.roster-table td { padding: 8px 20px; font-size: 13px; border-bottom: 1px solid #F9FAFB; }
+.roster-table td.center { text-align: center; }
+
+/* Questionnaires */
+.q-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid #F9FAFB; }
+.q-num { color: rgba(27,42,74,0.35); font-size: 13px; font-weight: 500; min-width: 24px; }
+.q-input { flex: 1; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none; }
+.q-input:focus { border-color: #1B2A4A; }
+.q-delete { background: none; border: none; color: #D1D5DB; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+.q-delete:hover { color: #EF4444; }
+.q-actions { padding: 16px 20px; display: flex; gap: 12px; }
+
+/* Settings */
+.settings-form { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); max-width: 520px; }
+.settings-form > * + * { margin-top: 14px; }
+.checklist-section { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); margin-bottom: 14px; overflow: hidden; }
+.checklist-section-header { background: rgba(232,237,245,0.5); padding: 12px 16px; border-bottom: 1px solid #F3F4F6; font-size: 13px; font-weight: 600; color: #1B2A4A; }
+.checklist-item-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 16px; border-bottom: 1px solid #F9FAFB; font-size: 13px; color: #374151; }
+.checklist-item-row:last-child { border-bottom: none; }
+.via-badge { font-size: 10px; color: #9CA3AF; background: #F3F4F6; padding: 2px 8px; border-radius: 4px; }
+
+.page-desc { color: #6B7280; font-size: 13px; margin-bottom: 20px; }
+.loading { text-align: center; padding: 80px 20px; color: #9CA3AF; font-size: 14px; }
 </style>
 </head>
 <body>
-<div id="root"></div>
 
-<script type="text/babel">
-const { useState, useEffect, useCallback, useMemo } = React;
+<div id="root" class="app"></div>
 
-// ── Supabase client ──
+<script>
+// ── Supabase ──
 const SUPABASE_URL = 'https://grmynepeyoeyvjpaityw.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdybXluZXBleW9leXZqcGFpdHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MjQ3NjAsImV4cCI6MjEwNTIwMDc2MH0.3SgjI69FvcsmSM2Em1PF4NYWo8Plq5fa-dpxnCfzbPY';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// ── Navigation ──
-const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: '▦' },
-  { id: 'client', label: 'Client View', icon: '◉' },
-  { id: 'calllist', label: 'Call List', icon: '✆' },
-  { id: 'automation', label: 'Automation', icon: '⟳' },
-  { id: 'templates', label: 'Templates', icon: '✉' },
-  { id: 'questionnaires', label: 'Questionnaires', icon: '?' },
-  { id: 'settings', label: 'Settings', icon: '⚙' },
-];
-
-// ═══════════════════════════════════════════
-// MAIN APP
-// ═══════════════════════════════════════════
-function App() {
-  const [page, setPage] = useState('dashboard');
-  const [selectedClientId, setSelectedClientId] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  const navigateToClient = (clientId) => {
-    setSelectedClientId(clientId);
-    setPage('client');
-  };
-
-  return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-56' : 'w-0'} bg-navy flex-shrink-0 flex flex-col transition-all duration-200 overflow-hidden`}>
-        <div className="p-4 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center text-gold font-bold text-sm">H4</div>
-            <div>
-              <div className="text-white font-semibold text-sm leading-tight">H4 Accounting</div>
-              <div className="text-gold text-xs">Document Portal</div>
-            </div>
-          </div>
-        </div>
-        <nav className="flex-1 py-2">
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setPage(item.id)}
-              className={`nav-item w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm ${page === item.id ? 'active text-white' : 'text-white/60'}`}
-            >
-              <span className="text-base w-5 text-center">{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="p-4 border-t border-white/10">
-          <div className="text-white/40 text-xs">Tax Year 2026</div>
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="sticky top-0 z-10 bg-navy/95 backdrop-blur px-6 py-3 flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white/60 hover:text-white mr-4">☰</button>
-          <h1 className="text-white font-semibold text-lg flex-1">
-            {NAV_ITEMS.find(n => n.id === page)?.label}
-          </h1>
-          <div className="flex items-center gap-3">
-            <span className="text-white/50 text-sm">Tax Year</span>
-            <select className="bg-white/10 text-white text-sm rounded px-2 py-1 border border-white/20">
-              <option>2026</option>
-              <option>2025</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="p-6 fade-in">
-          {page === 'dashboard' && <DashboardPage onSelectClient={navigateToClient} />}
-          {page === 'client' && <ClientViewPage selectedClientId={selectedClientId} setSelectedClientId={setSelectedClientId} />}
-          {page === 'calllist' && <CallListPage onSelectClient={navigateToClient} />}
-          {page === 'automation' && <AutomationPage />}
-          {page === 'templates' && <TemplatesPage />}
-          {page === 'questionnaires' && <QuestionnairesPage />}
-          {page === 'settings' && <SettingsPage />}
-        </div>
-      </main>
-    </div>
-  );
+let sb;
+try {
+  const { createClient } = supabase;
+  sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) {
+  document.getElementById('root').innerHTML = '<div style="padding:40px;color:red;font-family:sans-serif"><h2>Error initializing Supabase</h2><pre>' + e.message + '</pre></div>';
+  throw e;
 }
 
-// ═══════════════════════════════════════════
-// DASHBOARD PAGE
-// ═══════════════════════════════════════════
-function DashboardPage({ onSelectClient }) {
-  const [summary, setSummary] = useState({ total_active: 0, ready_to_prepare: 0, waiting: 0, on_call_list: 0 });
-  const [clients, setClients] = useState([]);
-  const [search, setSearch] = useState('');
-  const [filterReturn, setFilterReturn] = useState('all');
-  const [loading, setLoading] = useState(true);
+// ── State ──
+let state = {
+  page: 'dashboard',
+  selectedClientId: null,
+  dashboardSummary: { total_active: 0, ready_to_prepare: 0, waiting: 0, on_call_list: 0 },
+  dashboardClients: [],
+  search: '',
+  filterReturn: 'all',
+  allClients: [],
+  clientDetail: null,
+  clientSections: [],
+  callList: [],
+  settings: null,
+  templates: [],
+  activeTemplate: 'all_received',
+  questionnaires: [],
+  activeReturn: '1040',
+  rosterClients: [],
+  loading: true,
+};
 
-  const load = async () => {
-    setLoading(true);
-    const { data: s } = await sb.from('v_dashboard_summary').select('*').single();
-    if (s) setSummary(s);
+function setState(updates) {
+  Object.assign(state, updates);
+  render();
+}
 
-    const { data: c } = await sb.from('v_client_dashboard').select('*').eq('status', 'Active').order('name');
-    if (c) setClients(c);
-    setLoading(false);
-  };
+// ── Data loading ──
+async function loadDashboard() {
+  setState({ loading: true });
+  const [{ data: s }, { data: c }] = await Promise.all([
+    sb.from('v_dashboard_summary').select('*').single(),
+    sb.from('v_client_dashboard').select('*').eq('status', 'Active').order('name')
+  ]);
+  setState({ dashboardSummary: s || state.dashboardSummary, dashboardClients: c || [], loading: false });
+}
 
-  useEffect(() => { load(); }, []);
+async function loadAllClients() {
+  const { data } = await sb.from('clients').select('*').eq('status', 'Active').order('name');
+  setState({ allClients: data || [] });
+  if (!state.selectedClientId && data && data.length > 0) {
+    setState({ selectedClientId: data[0].id });
+    await loadClientDetail(data[0].id);
+  }
+}
 
-  const filtered = useMemo(() => {
-    return clients.filter(c => {
-      const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.email && c.email.toLowerCase().includes(search.toLowerCase()));
-      const matchReturn = filterReturn === 'all' || c.return_type === filterReturn;
-      return matchSearch && matchReturn;
-    });
-  }, [clients, search, filterReturn]);
+async function loadClientDetail(id) {
+  setState({ loading: true });
+  const { data: c } = await sb.from('clients').select('*').eq('id', id).single();
+  if (!c) { setState({ loading: false }); return; }
 
-  const cards = [
-    { label: 'Total Active', value: summary.total_active, color: 'border-navy text-navy' },
-    { label: 'Ready to Prepare', value: summary.ready_to_prepare, color: 'border-status-green text-status-green' },
-    { label: 'Waiting', value: summary.waiting, color: 'border-status-orange text-status-orange' },
-    { label: 'On Call List', value: summary.on_call_list, color: 'border-status-red text-status-red' },
+  const { data: secs } = await sb.from('checklist_sections').select('*, checklist_items(*)').eq('return_type', c.return_type).order('sort_order');
+  const { data: docs } = await sb.from('client_documents').select('*').eq('client_id', id);
+  const docMap = {};
+  (docs || []).forEach(d => { docMap[d.checklist_item_id] = d; });
+
+  const enriched = (secs || []).map(sec => ({
+    ...sec,
+    checklist_items: (sec.checklist_items || [])
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map(item => ({ ...item, doc_id: docMap[item.id]?.id, doc_status: docMap[item.id]?.status || 'Needed' }))
+  }));
+
+  setState({ clientDetail: c, clientSections: enriched, loading: false });
+}
+
+async function updateDocStatus(docId, itemId, newStatus) {
+  if (docId) {
+    await sb.from('client_documents').update({ status: newStatus }).eq('id', docId);
+  } else {
+    await sb.from('client_documents').insert({ client_id: state.selectedClientId, checklist_item_id: itemId, status: newStatus });
+  }
+  await loadClientDetail(state.selectedClientId);
+  loadDashboard(); // refresh counts
+}
+
+async function loadCallList() {
+  setState({ loading: true });
+  const { data } = await sb.from('v_call_list').select('*');
+  setState({ callList: data || [], loading: false });
+}
+
+async function loadTemplates() {
+  setState({ loading: true });
+  const { data } = await sb.from('email_templates').select('*');
+  setState({ templates: data || [], loading: false });
+}
+
+async function loadQuestionnaires() {
+  setState({ loading: true });
+  const { data } = await sb.from('questionnaires').select('*').order('sort_order');
+  setState({ questionnaires: data || [], loading: false });
+}
+
+async function loadSettings() {
+  setState({ loading: true });
+  const { data } = await sb.from('firm_settings').select('*').single();
+  setState({ settings: data, loading: false });
+}
+
+async function loadRoster() {
+  const { data } = await sb.from('v_client_dashboard').select('*').eq('status', 'Active').order('name');
+  setState({ rosterClients: data || [] });
+}
+
+// ── Helpers ──
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ── Render ──
+function render() {
+  const root = document.getElementById('root');
+  root.innerHTML = renderSidebar() + renderMain();
+  attachEvents();
+}
+
+function renderSidebar() {
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: '▦' },
+    { id: 'client', label: 'Client View', icon: '◉' },
+    { id: 'calllist', label: 'Call List', icon: '✆' },
+    { id: 'automation', label: 'Automation', icon: '⟳' },
+    { id: 'templates', label: 'Templates', icon: '✉' },
+    { id: 'questionnaires', label: 'Questionnaires', icon: '?' },
+    { id: 'settings', label: 'Settings', icon: '⚙' },
   ];
 
-  if (loading) return <div className="text-center py-20 text-gray-400">Loading dashboard…</div>;
-
-  return (
-    <div>
-      <p className="text-gray-500 text-sm mb-6">Every active client at a glance — search, filter, and jump straight in.</p>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {cards.map(card => (
-          <div key={card.label} className={`bg-white rounded-xl border-2 ${card.color} p-4 card-shadow`}>
-            <div className="text-xs font-medium uppercase tracking-wide opacity-70">{card.label}</div>
-            <div className="text-3xl font-bold mt-1">{card.value}</div>
-          </div>
-        ))}
+  return `
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">H4</div>
+        <div><div class="brand-name">H4 Accounting</div><div class="brand-sub">Document Portal</div></div>
       </div>
-
-      {/* Search & filter */}
-      <div className="flex gap-3 mb-4">
-        <div className="flex-1 relative">
-          <span className="absolute left-3 top-2.5 text-gray-400 text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder="Search clients by name or email…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-navy focus:ring-1 focus:ring-navy/20"
-          />
-        </div>
-        <select
-          value={filterReturn}
-          onChange={e => setFilterReturn(e.target.value)}
-          className="px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-navy"
-        >
-          <option value="all">All returns</option>
-          <option value="1040">1040</option>
-          <option value="1065">1065</option>
-          <option value="1120-S">1120-S</option>
-        </select>
-      </div>
-
-      <div className="text-xs text-gray-400 mb-2">Showing {filtered.length} of {clients.length} clients</div>
-
-      {/* Client table */}
-      <div className="bg-white rounded-xl card-shadow overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left px-4 py-3 text-gray-500 font-medium">Client ▲</th>
-              <th className="text-center px-3 py-3 text-gray-500 font-medium">Return</th>
-              <th className="text-center px-3 py-3 text-gray-500 font-medium">Status</th>
-              <th className="px-3 py-3 text-gray-500 font-medium text-center">Progress</th>
-              <th className="text-center px-3 py-3 text-gray-500 font-medium">Needed</th>
-              <th className="text-center px-3 py-3 text-gray-500 font-medium">Received</th>
-              <th className="text-right px-4 py-3 text-gray-500 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(client => {
-              const pct = client.progress_pct || 0;
-              const statusLabel = client.needed_count === 0 && client.total_applicable > 0 ? 'Ready' : 'Waiting';
-              const statusColor = statusLabel === 'Ready' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
-              return (
-                <tr key={client.id} className="border-b border-gray-50 hover:bg-blue-soft/30 cursor-pointer" onClick={() => onSelectClient(client.id)}>
-                  <td className="px-4 py-3 font-medium text-navy">{client.name}</td>
-                  <td className="text-center px-3 py-3 text-gray-600">{client.return_type}</td>
-                  <td className="text-center px-3 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>{statusLabel}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="progress-bar h-full bg-navy rounded-full" style={{ width: `${pct}%` }}></div>
-                      </div>
-                      <span className="text-xs text-gray-400 w-12 text-right">{client.received_count}/{client.total_applicable}</span>
-                    </div>
-                  </td>
-                  <td className="text-center px-3 py-3"><span className={`font-semibold ${client.needed_count > 0 ? 'text-status-orange' : 'text-gray-300'}`}>{client.needed_count}</span></td>
-                  <td className="text-center px-3 py-3 text-gray-600">{client.received_count}</td>
-                  <td className="text-right px-4 py-3 text-navy/40">→</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+      <nav class="nav">
+        ${navItems.map(n => `<button class="nav-btn ${state.page === n.id ? 'active' : ''}" data-nav="${n.id}"><span class="nav-icon">${n.icon}</span>${n.label}</button>`).join('')}
+      </nav>
+      <div class="sidebar-footer">Tax Year 2026</div>
+    </aside>`;
 }
 
-// ═══════════════════════════════════════════
-// CLIENT VIEW PAGE
-// ═══════════════════════════════════════════
-function ClientViewPage({ selectedClientId, setSelectedClientId }) {
-  const [clients, setClients] = useState([]);
-  const [client, setClient] = useState(null);
-  const [sections, setSections] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await sb.from('clients').select('*').eq('status', 'Active').order('name');
-      if (data) {
-        setClients(data);
-        if (!selectedClientId && data.length > 0) setSelectedClientId(data[0].id);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (!selectedClientId) return;
-    loadClient(selectedClientId);
-  }, [selectedClientId]);
-
-  const loadClient = async (id) => {
-    setLoading(true);
-    const { data: c } = await sb.from('clients').select('*').eq('id', id).single();
-    if (c) setClient(c);
-
-    // Load sections + items + statuses for this client's return type
-    const { data: secs } = await sb.from('checklist_sections').select('*, checklist_items(*)').eq('return_type', c.return_type).order('sort_order');
-
-    if (secs) {
-      // Load client_documents for this client
-      const { data: docs } = await sb.from('client_documents').select('*').eq('client_id', id);
-      const docMap = {};
-      (docs || []).forEach(d => { docMap[d.checklist_item_id] = d; });
-
-      const enriched = secs.map(sec => ({
-        ...sec,
-        checklist_items: (sec.checklist_items || [])
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .map(item => ({
-            ...item,
-            doc_id: docMap[item.id]?.id,
-            doc_status: docMap[item.id]?.status || 'Needed',
-          }))
-      }));
-      setSections(enriched);
-    }
-    setLoading(false);
-  };
-
-  const updateDocStatus = async (docId, itemId, newStatus) => {
-    if (docId) {
-      await sb.from('client_documents').update({ status: newStatus }).eq('id', docId);
-    } else {
-      await sb.from('client_documents').insert({ client_id: selectedClientId, checklist_item_id: itemId, status: newStatus });
-    }
-    loadClient(selectedClientId);
-  };
-
-  const neededCount = sections.reduce((sum, s) => sum + s.checklist_items.filter(i => i.doc_status === 'Needed').length, 0);
-  const phone = client?.mobile_phone || client?.work_phone || client?.home_phone;
-
-  if (loading && !client) return <div className="text-center py-20 text-gray-400">Loading…</div>;
-
-  return (
-    <div>
-      <p className="text-gray-500 text-sm mb-6">Pick a client, update their checklist, and chase what's still needed.</p>
-
-      <div className="flex gap-6">
-        {/* Left sidebar */}
-        <div className="w-72 flex-shrink-0 space-y-4">
-          <div className="bg-white rounded-xl p-4 card-shadow">
-            <div className="text-xs font-medium text-navy/50 uppercase tracking-wide mb-2">Select Client</div>
-            <select
-              value={selectedClientId || ''}
-              onChange={e => setSelectedClientId(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
-            >
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-
-            {client && (
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-400">Return</span><span className="font-medium text-navy">{client.return_type}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Tax Year</span><span className="font-medium text-navy">{client.tax_year}</span></div>
-                <div className="flex justify-between items-start"><span className="text-gray-400 flex-shrink-0">Email</span><span className="font-medium text-navy text-right ml-2 break-all text-xs">{client.email || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Phone</span><span className="font-medium text-navy">{phone || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Status</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${neededCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                    {neededCount > 0 ? 'Waiting' : 'Ready'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-xl p-4 card-shadow space-y-2">
-            <button className="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Preview reminder</button>
-            <button className="w-full py-2.5 px-3 bg-gold text-navy rounded-lg text-sm font-semibold hover:bg-gold/90">Draft / Send reminder</button>
-            <button className="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Reset reminder cycle</button>
-            <button className="w-full py-2 px-3 border border-red-200 rounded-lg text-sm text-red-500 hover:bg-red-50">Archive client</button>
-          </div>
-        </div>
-
-        {/* Right: document checklist */}
-        <div className="flex-1 space-y-1">
-          {neededCount > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-              <span className="text-amber-800 font-medium text-sm">{neededCount} items still needed.</span>
-            </div>
-          )}
-
-          {sections.map(sec => (
-            <div key={sec.id} className="bg-white rounded-xl card-shadow mb-4 overflow-hidden">
-              <div className="bg-blue-soft/50 px-4 py-2.5 border-b border-gray-100">
-                <h3 className="font-semibold text-navy text-sm">{sec.name}</h3>
-              </div>
-              <div>
-                {sec.checklist_items.map(item => (
-                  <div key={item.id} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0">
-                    <div className="flex-1 mr-4">
-                      <div className="text-sm text-gray-800">{item.name}</div>
-                      <div className="text-xs text-navy/40 uppercase">{item.send_via}</div>
-                    </div>
-                    <div className="flex gap-1.5">
-                      {['Received', 'Needed', 'N/A'].map(status => (
-                        <button
-                          key={status}
-                          onClick={() => updateDocStatus(item.doc_id, item.id, status)}
-                          className={`doc-btn px-3 py-1 rounded-md text-xs font-medium border ${
-                            item.doc_status === status
-                              ? status === 'Received' ? 'received' : status === 'Needed' ? 'needed' : 'na'
-                              : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'
-                          }`}
-                        >
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+function renderMain() {
+  const titles = { dashboard: 'Dashboard', client: 'Client View', calllist: 'Call List', automation: 'Automation', templates: 'Email Templates', questionnaires: 'Questionnaires', settings: 'Settings' };
+  let content = '';
+  switch (state.page) {
+    case 'dashboard': content = renderDashboard(); break;
+    case 'client': content = renderClientView(); break;
+    case 'calllist': content = renderCallList(); break;
+    case 'automation': content = renderAutomation(); break;
+    case 'templates': content = renderTemplates(); break;
+    case 'questionnaires': content = renderQuestionnaires(); break;
+    case 'settings': content = renderSettings(); break;
+  }
+  return `
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">${titles[state.page]}</div>
+        <span class="topbar-label">Tax Year</span>
+        <select class="topbar-select"><option>2026</option><option>2025</option></select>
       </div>
-    </div>
-  );
+      <div class="content">${content}</div>
+    </div>`;
 }
 
-// ═══════════════════════════════════════════
-// CALL LIST PAGE
-// ═══════════════════════════════════════════
-function CallListPage({ onSelectClient }) {
-  const [callList, setCallList] = useState([]);
-  const [loading, setLoading] = useState(true);
+// ── Dashboard ──
+function renderDashboard() {
+  if (state.loading && state.dashboardClients.length === 0) return '<div class="loading">Loading dashboard…</div>';
+  const s = state.dashboardSummary;
+  const clients = state.dashboardClients.filter(c => {
+    const ms = !state.search || c.name.toLowerCase().includes(state.search.toLowerCase()) || (c.email && c.email.toLowerCase().includes(state.search.toLowerCase()));
+    const mr = state.filterReturn === 'all' || c.return_type === state.filterReturn;
+    return ms && mr;
+  });
 
-  const load = async () => {
-    setLoading(true);
-    const { data } = await sb.from('v_call_list').select('*');
-    setCallList(data || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const markCalled = async (clientId) => {
-    await sb.from('call_log').insert({ client_id: clientId, notes: 'Called' });
-    load();
-  };
-
-  const removeFromList = async (clientId) => {
-    await sb.from('clients').update({ escalated: false, escalated_at: null }).eq('id', clientId);
-    load();
-  };
-
-  if (loading) return <div className="text-center py-20 text-gray-400">Loading…</div>;
-
-  return (
-    <div>
-      <p className="text-gray-500 text-sm mb-6">Clients who hit the escalation threshold with documents still missing. Automated emails have stopped — call them directly.</p>
-
-      {callList.length === 0 ? (
-        <div className="bg-white rounded-xl card-shadow p-12 text-center">
-          <div className="text-4xl mb-3">✓</div>
-          <div className="text-gray-500">No clients on the call list right now.</div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {callList.map(c => {
-            const phone = c.mobile_phone || c.work_phone || c.home_phone;
-            return (
-              <div key={c.id} className="bg-white rounded-xl card-shadow p-5 border-l-4 border-gold">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-semibold text-navy text-lg cursor-pointer hover:underline" onClick={() => onSelectClient(c.id)}>{c.name}</h3>
-                    <div className="text-sm text-gray-500">{c.return_type} · {c.email}</div>
-                  </div>
-                  {c.escalated_at && <span className="text-xs text-status-red">Escalated {new Date(c.escalated_at).toLocaleDateString()}</span>}
-                </div>
-
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">✆</span>
-                  <span className={`font-semibold ${phone ? 'text-navy' : 'text-status-red'}`}>{phone || 'No phone on file'}</span>
-                </div>
-
-                <div className="text-sm text-gray-500 mb-4">▸ {c.missing_count} documents still missing</div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Call Notes</label>
-                    <input
-                      className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
-                      placeholder="Left voicemail / will upload by Friday…"
-                      defaultValue={c.call_notes || ''}
-                      onBlur={async (e) => {
-                        await sb.from('clients').update({ call_notes: e.target.value }).eq('id', c.id);
-                      }}
-                    />
-                  </div>
-                  <button onClick={() => markCalled(c.id)} className="mt-5 px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light">Mark called</button>
-                  <button onClick={() => removeFromList(c.id)} className="mt-5 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Remove from list</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+  return `
+    <p class="page-desc">Every active client at a glance — search, filter, and jump straight in.</p>
+    <div class="summary-grid">
+      <div class="summary-card sc-navy"><div class="label">Total Active</div><div class="value">${s.total_active}</div></div>
+      <div class="summary-card sc-green"><div class="label">Ready to Prepare</div><div class="value">${s.ready_to_prepare}</div></div>
+      <div class="summary-card sc-orange"><div class="label">Waiting</div><div class="value">${s.waiting}</div></div>
+      <div class="summary-card sc-red"><div class="label">On Call List</div><div class="value">${s.on_call_list}</div></div>
     </div>
-  );
+    <div class="search-row">
+      <input class="search-input" placeholder="Search clients by name or email…" value="${esc(state.search)}" data-action="search" />
+      <select class="filter-select" data-action="filter-return">
+        <option value="all" ${state.filterReturn === 'all' ? 'selected' : ''}>All returns</option>
+        <option value="1040" ${state.filterReturn === '1040' ? 'selected' : ''}>1040</option>
+        <option value="1065" ${state.filterReturn === '1065' ? 'selected' : ''}>1065</option>
+        <option value="1120-S" ${state.filterReturn === '1120-S' ? 'selected' : ''}>1120-S</option>
+      </select>
+    </div>
+    <div class="showing-text">Showing ${clients.length} of ${state.dashboardClients.length} clients</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Client ▲</th><th class="center">Return</th><th class="center">Status</th><th>Progress</th><th class="center">Needed</th><th class="center">Received</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${clients.map(c => {
+            const pct = c.progress_pct || 0;
+            const ready = c.needed_count === 0 && c.total_applicable > 0;
+            return `<tr data-client-id="${c.id}" data-action="open-client">
+              <td class="client-name">${esc(c.name)}</td>
+              <td class="center">${c.return_type}</td>
+              <td class="center"><span class="badge ${ready ? 'badge-green' : 'badge-amber'}">${ready ? 'Ready' : 'Waiting'}</span></td>
+              <td><div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div><span class="progress-text">${c.received_count}/${c.total_applicable}</span></div></td>
+              <td class="center"><span class="needed-count ${c.needed_count > 0 ? 'has-needed' : 'none'}">${c.needed_count}</span></td>
+              <td class="center">${c.received_count}</td>
+              <td class="arrow-cell">→</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
 }
 
-// ═══════════════════════════════════════════
-// AUTOMATION PAGE
-// ═══════════════════════════════════════════
-function AutomationPage() {
-  const [settings, setSettings] = useState(null);
-  const [roster, setRoster] = useState([]);
-  const [loading, setLoading] = useState(true);
+// ── Client View ──
+function renderClientView() {
+  if (state.allClients.length === 0) return '<div class="loading">Loading…</div>';
+  const c = state.clientDetail;
+  if (!c) return '<div class="loading">Select a client…</div>';
 
-  useEffect(() => {
-    (async () => {
-      const { data: s } = await sb.from('firm_settings').select('*').single();
-      if (s) setSettings(s);
+  const phone = c.mobile_phone || c.work_phone || c.home_phone || '—';
+  const neededCount = state.clientSections.reduce((sum, s) => sum + s.checklist_items.filter(i => i.doc_status === 'Needed').length, 0);
 
-      const { data: c } = await sb.from('v_client_dashboard').select('*').eq('status', 'Active').order('name');
-      if (c) setRoster(c);
-      setLoading(false);
-    })();
-  }, []);
-
-  const updateSetting = async (field, value) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
-    await sb.from('firm_settings').update({ [field]: value }).eq('id', settings.id);
-  };
-
-  const toggleRoster = async (clientId, current) => {
-    await sb.from('clients').update({ on_reminder_roster: !current }).eq('id', clientId);
-    setRoster(prev => prev.map(c => c.id === clientId ? { ...c, on_reminder_roster: !current } : c));
-  };
-
-  if (loading || !settings) return <div className="text-center py-20 text-gray-400">Loading…</div>;
-
-  const rosterCount = roster.filter(c => c.on_reminder_roster).length;
-
-  return (
-    <div>
-      <p className="text-gray-500 text-sm mb-6">The Day 1 / 3 / 10 reminder engine. It runs automatically once a day (~9 AM ET).</p>
-
-      {/* How it works */}
-      <div className="bg-gold-light rounded-xl p-5 mb-6 card-shadow">
-        <h3 className="font-semibold text-navy mb-2">How the daily automation works</h3>
-        <ol className="text-sm text-gray-700 space-y-1 list-decimal pl-5">
-          <li><b>Connect your mailbox</b> in Settings → Email connection (Outlook or Gmail).</li>
-          <li><b>Set up each client's documents</b> in Client View — mark every item Received or Needed.</li>
-          <li><b>Pick who's included</b> in the Reminder roster below.</li>
-          <li><b>Choose Send mode</b> — Draft or Auto-send.</li>
-          <li><b>Turn on Daily automation.</b> Each morning it emails/drafts Reminder 1 on day 1, Reminder 2 on day 3, and adds clients to the Call List on day 10.</li>
-        </ol>
-      </div>
-
-      {/* Mode toggles */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-5 card-shadow">
-          <h4 className="font-semibold text-navy mb-1">Send mode</h4>
-          <p className="text-xs text-gray-500 mb-3">Draft mode: each reminder is saved as a draft in {settings.email_provider} for you to review and send.</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => updateSetting('send_mode', settings.send_mode === 'draft' ? 'auto' : 'draft')}
-              className={`relative w-12 h-6 rounded-full transition-colors ${settings.send_mode === 'auto' ? 'bg-navy' : 'bg-gray-300'}`}
-            >
-              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.send_mode === 'auto' ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
-            </button>
-            <span className="text-sm text-gray-600">{settings.send_mode === 'draft' ? 'Draft mode' : 'Auto-send'}</span>
+  return `
+    <p class="page-desc">Pick a client, update their checklist, and chase what's still needed.</p>
+    <div class="client-layout">
+      <div class="client-sidebar">
+        <div class="client-info-card">
+          <div class="info-label">Select Client</div>
+          <select class="client-select" data-action="select-client">
+            ${state.allClients.map(cl => `<option value="${cl.id}" ${cl.id === state.selectedClientId ? 'selected' : ''}>${esc(cl.name)}</option>`).join('')}
+          </select>
+          <div style="margin-top:14px">
+            <div class="info-row"><span class="info-key">Return</span><span class="info-val">${c.return_type}</span></div>
+            <div class="info-row"><span class="info-key">Tax Year</span><span class="info-val">${c.tax_year}</span></div>
+            <div class="info-row"><span class="info-key">Email</span><span class="info-val">${esc(c.email || '—')}</span></div>
+            <div class="info-row"><span class="info-key">Phone</span><span class="info-val">${esc(phone)}</span></div>
+            <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="badge ${neededCount > 0 ? 'badge-amber' : 'badge-green'}">${neededCount > 0 ? 'Waiting' : 'Ready'}</span></span></div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-5 card-shadow">
-          <h4 className="font-semibold text-navy mb-1">Daily automation</h4>
-          <p className="text-xs text-gray-500 mb-3">Active — runs each day at ~9 AM ET.</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => updateSetting('daily_automation', !settings.daily_automation)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${settings.daily_automation ? 'bg-navy' : 'bg-gray-300'}`}
-            >
-              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${settings.daily_automation ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
-            </button>
-            <span className="text-sm text-gray-600">{settings.daily_automation ? 'Active' : 'Paused'}</span>
-          </div>
+        <div class="actions-card">
+          <button class="btn">Preview reminder</button>
+          <button class="btn btn-gold">Draft / Send reminder</button>
+          <button class="btn">Reset reminder cycle</button>
+          <button class="btn btn-red">Archive client</button>
         </div>
       </div>
-
-      {/* Reminder schedule */}
-      <div className="bg-white rounded-xl p-5 card-shadow mb-6">
-        <h4 className="font-semibold text-navy mb-4">Reminder schedule</h4>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'Reminder #1 (Gentle Nudge)', field: 'reminder_1_days', color: 'border-gold' },
-            { label: 'Reminder #2 (Deadline)', field: 'reminder_2_days', color: 'border-navy' },
-            { label: 'Escalate / Call List', field: 'escalation_days', color: 'border-status-red' },
-          ].map(r => (
-            <div key={r.field} className={`border-2 ${r.color} rounded-xl p-4`}>
-              <div className="text-xs font-medium text-navy/60 uppercase tracking-wide mb-2">{r.label}</div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={settings[r.field]}
-                  onChange={e => updateSetting(r.field, parseInt(e.target.value) || 0)}
-                  className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-center text-sm font-medium focus:outline-none focus:border-navy"
-                />
-                <span className="text-sm text-gray-500">days after start</span>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div class="client-main">
+        ${neededCount > 0 ? `<div class="needed-banner">${neededCount} items still needed.</div>` : ''}
+        ${state.clientSections.map(sec => `
+          <div class="section-card">
+            <div class="section-header">${esc(sec.name)}</div>
+            ${sec.checklist_items.map(item => `
+              <div class="doc-row">
+                <div class="doc-info"><div class="doc-name">${esc(item.name)}</div><div class="doc-via">${item.send_via}</div></div>
+                <div class="doc-btns">
+                  ${['Received', 'Needed', 'N/A'].map(st => `<button class="doc-btn ${item.doc_status === st ? (st === 'Received' ? 'active-received' : st === 'Needed' ? 'active-needed' : 'active-na') : ''}" data-doc-id="${item.doc_id || ''}" data-item-id="${item.id}" data-status="${st}" data-action="update-doc">${st}</button>`).join('')}
+                </div>
+              </div>`).join('')}
+          </div>`).join('')}
       </div>
-
-      {/* Reminder roster */}
-      <div className="bg-white rounded-xl card-shadow overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-          <div>
-            <h4 className="font-semibold text-navy">Reminder roster</h4>
-            <p className="text-xs text-gray-500 mt-0.5">Only checked clients receive automated reminders. {rosterCount} of {roster.length} active clients receiving reminders.</p>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={async () => { await sb.from('clients').update({ on_reminder_roster: true }).eq('status', 'Active'); setRoster(prev => prev.map(c => ({ ...c, on_reminder_roster: true }))); }} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs hover:bg-gray-50">Select all</button>
-            <button onClick={async () => { await sb.from('clients').update({ on_reminder_roster: false }).eq('status', 'Active'); setRoster(prev => prev.map(c => ({ ...c, on_reminder_roster: false }))); }} className="px-3 py-1.5 border border-gray-200 rounded-lg text-xs hover:bg-gray-50">Clear all</button>
-          </div>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-gray-500 text-xs">
-              <th className="px-5 py-2 text-left">On</th>
-              <th className="px-3 py-2 text-left">Client</th>
-              <th className="px-3 py-2 text-center">Return</th>
-              <th className="px-3 py-2 text-center">Missing</th>
-              <th className="px-3 py-2 text-left">Email</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roster.map(c => (
-              <tr key={c.id} className="border-b border-gray-50">
-                <td className="px-5 py-2">
-                  <input type="checkbox" checked={!!c.on_reminder_roster} onChange={() => toggleRoster(c.id, c.on_reminder_roster)} className="rounded" />
-                </td>
-                <td className="px-3 py-2 text-navy font-medium">{c.name}</td>
-                <td className="px-3 py-2 text-center text-gray-600">{c.return_type}</td>
-                <td className="px-3 py-2 text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${c.needed_count > 10 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{c.needed_count}</span>
-                </td>
-                <td className="px-3 py-2 text-gray-500 text-xs">{c.email}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    </div>`;
 }
 
-// ═══════════════════════════════════════════
-// TEMPLATES PAGE
-// ═══════════════════════════════════════════
-function TemplatesPage() {
-  const [templates, setTemplates] = useState([]);
-  const [activeType, setActiveType] = useState('all_received');
-  const [loading, setLoading] = useState(true);
+// ── Call List ──
+function renderCallList() {
+  if (state.loading && state.callList.length === 0) return '<div class="loading">Loading…</div>';
+  if (state.callList.length === 0) return `<p class="page-desc">Clients who hit the escalation threshold with documents still missing.</p><div class="empty-state"><div class="empty-icon">✓</div><div class="empty-text">No clients on the call list right now.</div></div>`;
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await sb.from('email_templates').select('*');
-      if (data) setTemplates(data);
-      setLoading(false);
-    })();
-  }, []);
+  return `
+    <p class="page-desc">Clients who hit the escalation threshold with documents still missing. Automated emails have stopped — call them directly.</p>
+    ${state.callList.map(c => {
+      const phone = c.mobile_phone || c.work_phone || c.home_phone;
+      return `<div class="call-card">
+        <div class="call-header">
+          <div><div class="call-name" data-client-id="${c.id}" data-action="open-client">${esc(c.name)}</div><div class="call-meta">${c.return_type} · ${esc(c.email || '')}</div></div>
+          ${c.escalated_at ? `<span class="call-escalated">Escalated ${new Date(c.escalated_at).toLocaleDateString()}</span>` : ''}
+        </div>
+        <div class="call-phone ${phone ? '' : 'none'}">✆ ${phone ? esc(phone) : 'No phone on file'}</div>
+        <div class="call-missing">▸ ${c.missing_count} documents still missing</div>
+        <div class="call-actions">
+          <div style="flex:1"><div class="field-label">Call Notes</div><input class="call-notes-input" placeholder="Left voicemail / will upload by Friday…" value="${esc(c.call_notes || '')}" data-client-id="${c.id}" data-action="save-call-notes" /></div>
+          <button class="btn btn-navy" data-client-id="${c.id}" data-action="mark-called">Mark called</button>
+          <button class="btn" data-client-id="${c.id}" data-action="remove-escalation">Remove from list</button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
 
-  const active = templates.find(t => t.template_type === activeType);
+// ── Automation ──
+function renderAutomation() {
+  if (!state.settings) return '<div class="loading">Loading…</div>';
+  const s = state.settings;
+  const rosterCount = state.rosterClients.filter(c => c.on_reminder_roster).length;
 
-  const updateField = async (field, value) => {
-    setTemplates(prev => prev.map(t => t.template_type === activeType ? { ...t, [field]: value } : t));
-    await sb.from('email_templates').update({ [field]: value }).eq('template_type', activeType);
-  };
+  return `
+    <p class="page-desc">The Day 1 / 3 / 10 reminder engine. It runs automatically once a day (~9 AM ET).</p>
+    <div class="info-box">
+      <h3>How the daily automation works</h3>
+      <ol>
+        <li><b>Connect your mailbox</b> in Settings → Email connection (Outlook or Gmail).</li>
+        <li><b>Set up each client's documents</b> in Client View — mark every item Received or Needed.</li>
+        <li><b>Pick who's included</b> in the Reminder roster below.</li>
+        <li><b>Choose Send mode</b> — Draft or Auto-send.</li>
+        <li><b>Turn on Daily automation.</b></li>
+      </ol>
+    </div>
+    <div class="toggle-grid">
+      <div class="toggle-card">
+        <h4>Send mode</h4><p>Draft mode: reminders saved as drafts for you to review.</p>
+        <div class="toggle-row"><button class="toggle ${s.send_mode === 'auto' ? 'on' : ''}" data-action="toggle-send-mode"><div class="toggle-knob"></div></button><span class="toggle-label">${s.send_mode === 'draft' ? 'Draft mode' : 'Auto-send'}</span></div>
+      </div>
+      <div class="toggle-card">
+        <h4>Daily automation</h4><p>Active — runs each day at ~9 AM ET.</p>
+        <div class="toggle-row"><button class="toggle ${s.daily_automation ? 'on' : ''}" data-action="toggle-daily"><div class="toggle-knob"></div></button><span class="toggle-label">${s.daily_automation ? 'Active' : 'Paused'}</span></div>
+      </div>
+    </div>
+    <div class="card" style="padding:20px;margin-bottom:20px">
+      <h4 style="font-weight:600;color:#1B2A4A;margin-bottom:14px;font-size:14px">Reminder schedule</h4>
+      <div class="schedule-grid">
+        <div class="schedule-card gold"><div class="schedule-label">Reminder #1 (Gentle Nudge)</div><div class="schedule-input-row"><input class="schedule-input" type="number" value="${s.reminder_1_days}" data-field="reminder_1_days" data-action="update-schedule" /><span class="schedule-suffix">days after start</span></div></div>
+        <div class="schedule-card navy"><div class="schedule-label">Reminder #2 (Deadline)</div><div class="schedule-input-row"><input class="schedule-input" type="number" value="${s.reminder_2_days}" data-field="reminder_2_days" data-action="update-schedule" /><span class="schedule-suffix">days after start</span></div></div>
+        <div class="schedule-card red"><div class="schedule-label">Escalate / Call List</div><div class="schedule-input-row"><input class="schedule-input" type="number" value="${s.escalation_days}" data-field="escalation_days" data-action="update-schedule" /><span class="schedule-suffix">days after start</span></div></div>
+      </div>
+    </div>
+    <div class="card" style="overflow:hidden">
+      <div class="roster-header">
+        <div><div class="roster-title">Reminder roster</div><div class="roster-sub">${rosterCount} of ${state.rosterClients.length} active clients receiving reminders.</div></div>
+        <div class="roster-actions"><button class="btn" data-action="roster-all">Select all</button><button class="btn" data-action="roster-clear">Clear all</button></div>
+      </div>
+      <table class="roster-table"><thead><tr><th>On</th><th>Client</th><th class="center">Return</th><th class="center">Missing</th><th>Email</th></tr></thead>
+      <tbody>${state.rosterClients.map(c => `<tr>
+        <td><input type="checkbox" ${c.on_reminder_roster ? 'checked' : ''} data-client-id="${c.id}" data-action="toggle-roster" /></td>
+        <td style="font-weight:500;color:#1B2A4A">${esc(c.name)}</td>
+        <td class="center">${c.return_type}</td>
+        <td class="center"><span class="badge ${c.needed_count > 10 ? 'badge-red' : 'badge-amber'}">${c.needed_count}</span></td>
+        <td style="color:#6B7280;font-size:12px">${esc(c.email || '')}</td>
+      </tr>`).join('')}</tbody></table>
+    </div>`;
+}
 
+// ── Templates ──
+function renderTemplates() {
   const tabs = [
     { type: 'all_received', label: 'All documents received' },
     { type: 'escalation', label: 'Escalation alert' },
     { type: 'reminder_1', label: 'Reminder #1 — gentle nudge' },
     { type: 'reminder_2', label: 'Reminder #2 — deadline' },
   ];
+  const active = state.templates.find(t => t.template_type === state.activeTemplate);
+  if (!active) return '<div class="loading">Loading…</div>';
 
-  if (loading) return <div className="text-center py-20 text-gray-400">Loading…</div>;
+  const previewSubject = (active.subject_line || '').replace('{{returnType}}', '1040').replace('{{clientName}}', 'Sample Client');
+  const previewBody = (active.message_body || '').replace(/\{\{clientName\}\}/g, 'Sample Client, LLC').replace(/\{\{returnType\}\}/g, '1040').replace(/\{\{missingDocs\}\}/g, '• Prior year tax return\n• W-2 wages\n• Photo ID / SSNs').replace(/\{\{missingCount\}\}/g, '3');
 
-  return (
-    <div>
-      <p className="text-gray-500 text-sm mb-6">Type the wording in plain text — the system formats it into the branded H4 email automatically.</p>
-
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {tabs.map(tab => (
-          <button
-            key={tab.type}
-            onClick={() => setActiveType(tab.type)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeType === tab.type ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
-          >
-            {tab.label}
-          </button>
-        ))}
+  return `
+    <p class="page-desc">Type the wording in plain text — the system formats it into the branded H4 email automatically.</p>
+    <div class="tabs">${tabs.map(t => `<button class="tab-btn ${state.activeTemplate === t.type ? 'active' : ''}" data-type="${t.type}" data-action="switch-template">${t.label}</button>`).join('')}</div>
+    <div class="template-grid">
+      <div class="template-editor">
+        <div><div class="field-label">Template Name</div><input class="text-input" value="${esc(active.template_name)}" data-field="template_name" data-action="update-template" /><div class="field-hint">Internal label only — clients never see this.</div></div>
+        <div><div class="field-label">Subject Line</div><input class="text-input" value="${esc(active.subject_line)}" data-field="subject_line" data-action="update-template" /></div>
+        <div><div class="field-label">Header Title</div><input class="text-input" value="${esc(active.header_title || '')}" data-field="header_title" data-action="update-template" /></div>
+        <div><div class="field-label">Message</div><textarea class="textarea" data-field="message_body" data-action="update-template">${esc(active.message_body)}</textarea></div>
       </div>
-
-      {active && (
-        <div className="grid grid-cols-2 gap-6">
-          {/* Editor */}
-          <div className="bg-white rounded-xl p-5 card-shadow space-y-4">
-            <div>
-              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Template Name</label>
-              <input value={active.template_name} onChange={e => updateField('template_name', e.target.value)} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy" />
-              <p className="text-xs text-gray-400 mt-1">Internal label only — clients never see this.</p>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Subject Line</label>
-              <input value={active.subject_line} onChange={e => updateField('subject_line', e.target.value)} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Header Title</label>
-              <input value={active.header_title || ''} onChange={e => updateField('header_title', e.target.value)} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">Message</label>
-              <textarea value={active.message_body} onChange={e => updateField('message_body', e.target.value)} rows={10} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy resize-none" />
-            </div>
-          </div>
-
-          {/* Preview */}
-          <div className="bg-white rounded-xl card-shadow overflow-hidden">
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <span className="text-xs text-gray-400 uppercase tracking-wide">Subject Preview</span>
-              <div className="text-sm font-medium text-navy mt-0.5">{active.subject_line.replace('{{returnType}}', '1040').replace('{{clientName}}', 'Sample Client, LLC')}</div>
-            </div>
-            <div className="p-6">
-              <div className="bg-navy rounded-lg px-5 py-4 mb-6">
-                <div className="text-white font-bold text-lg">H4 Accounting LLC</div>
-                <div className="text-gold text-sm">{active.header_title}</div>
-              </div>
-              <div className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
-                {active.message_body
-                  .replace(/\{\{clientName\}\}/g, 'Sample Client, LLC')
-                  .replace(/\{\{returnType\}\}/g, '1040')
-                  .replace(/\{\{missingDocs\}\}/g, '• Prior year tax return\n• W-2 wages\n• Photo ID / SSNs')
-                  .replace(/\{\{missingCount\}\}/g, '3')}
-              </div>
-              <div className="mt-6 bg-gold-light rounded-lg p-4">
-                <div className="text-sm font-semibold text-navy">Payment Instructions</div>
-                <div className="text-xs text-gray-600 mt-1">Preferred payment method is through Zelle ID <b>hari_rad@live.com</b></div>
-              </div>
-              <div className="mt-6 text-xs text-gray-500">
-                <div className="font-semibold">Hariharan Subrahmanyan, CPA</div>
-                <div>H4 Accounting LLC · VA CPA License #50482</div>
-                <div>hari_rad@live.com · 540-454-7216</div>
-              </div>
-            </div>
-          </div>
+      <div class="preview-card">
+        <div class="preview-subject"><div class="preview-subject-label">Subject Preview</div><div class="preview-subject-text">${esc(previewSubject)}</div></div>
+        <div class="preview-body">
+          <div class="preview-banner"><h3>H4 Accounting LLC</h3><p>${esc(active.header_title || '')}</p></div>
+          <div class="preview-message">${esc(previewBody)}</div>
+          <div class="preview-payment"><h4>Payment Instructions</h4><p>Preferred payment method is through Zelle ID <b>hari_rad@live.com</b></p></div>
+          <div class="preview-sig"><strong>Hariharan Subrahmanyan, CPA</strong><br>H4 Accounting LLC · VA CPA License #50482<br>hari_rad@live.com · 540-454-7216</div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    </div>`;
 }
 
-// ═══════════════════════════════════════════
-// QUESTIONNAIRES PAGE
-// ═══════════════════════════════════════════
-function QuestionnairesPage() {
-  const [questions, setQuestions] = useState([]);
-  const [activeReturn, setActiveReturn] = useState('1040');
-  const [loading, setLoading] = useState(true);
-
-  const load = async () => {
-    const { data } = await sb.from('questionnaires').select('*').order('sort_order');
-    if (data) setQuestions(data);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const filtered = questions.filter(q => q.return_type === activeReturn);
-
-  const addQuestion = async () => {
-    const maxOrder = Math.max(0, ...filtered.map(q => q.sort_order));
-    await sb.from('questionnaires').insert({ return_type: activeReturn, question: 'New question?', sort_order: maxOrder + 1 });
-    load();
-  };
-
-  const removeQuestion = async (id) => {
-    await sb.from('questionnaires').delete().eq('id', id);
-    load();
-  };
-
-  const updateQuestion = async (id, value) => {
-    setQuestions(prev => prev.map(q => q.id === id ? { ...q, question: value } : q));
-    await sb.from('questionnaires').update({ question: value }).eq('id', id);
-  };
-
-  if (loading) return <div className="text-center py-20 text-gray-400">Loading…</div>;
-
-  return (
-    <div>
-      <p className="text-gray-500 text-sm mb-6">Life-changes questions to send first — they catch surprises before you start a return.</p>
-
-      <div className="flex gap-2 mb-6">
-        {['1040', '1065', '1120-S'].map(rt => (
-          <button
-            key={rt}
-            onClick={() => setActiveReturn(rt)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeReturn === rt ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
-          >
-            Form {rt}
-          </button>
-        ))}
-      </div>
-
-      <div className="bg-white rounded-xl card-shadow overflow-hidden">
-        {filtered.map((q, i) => (
-          <div key={q.id} className="flex items-center gap-3 px-5 py-3 border-b border-gray-50">
-            <span className="text-navy/40 text-sm font-medium w-6">{i + 1}.</span>
-            <input
-              value={q.question}
-              onChange={e => updateQuestion(q.id, e.target.value)}
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
-            />
-            <button onClick={() => removeQuestion(q.id)} className="text-gray-300 hover:text-red-400 text-lg">×</button>
-          </div>
-        ))}
-        <div className="px-5 py-4 flex gap-3">
-          <button onClick={addQuestion} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">+ Add question</button>
-          <button className="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light">Save questionnaire</button>
-        </div>
-      </div>
-    </div>
-  );
+// ── Questionnaires ──
+function renderQuestionnaires() {
+  const filtered = state.questionnaires.filter(q => q.return_type === state.activeReturn);
+  return `
+    <p class="page-desc">Life-changes questions to send first — they catch surprises before you start a return.</p>
+    <div class="tabs">${['1040', '1065', '1120-S'].map(rt => `<button class="tab-btn ${state.activeReturn === rt ? 'active' : ''}" data-type="${rt}" data-action="switch-return">${'Form ' + rt}</button>`).join('')}</div>
+    <div class="card" style="overflow:hidden">
+      ${filtered.map((q, i) => `<div class="q-row"><span class="q-num">${i + 1}.</span><input class="q-input" value="${esc(q.question)}" data-id="${q.id}" data-action="update-question" /><button class="q-delete" data-id="${q.id}" data-action="delete-question">×</button></div>`).join('')}
+      <div class="q-actions"><button class="btn" data-action="add-question">+ Add question</button><button class="btn btn-navy" data-action="save-questionnaire">Save questionnaire</button></div>
+    </div>`;
 }
 
-// ═══════════════════════════════════════════
-// SETTINGS PAGE
-// ═══════════════════════════════════════════
-function SettingsPage() {
-  const [settings, setSettings] = useState(null);
-  const [activeTab, setActiveTab] = useState('firm');
-  const [loading, setLoading] = useState(true);
+// ── Settings ──
+function renderSettings() {
+  if (!state.settings) return '<div class="loading">Loading…</div>';
+  const s = state.settings;
+  const settingsTab = state.settingsTab || 'firm';
+  const tabs = [{ id: 'firm', label: 'Firm & Email' }, { id: 'checklist', label: 'Checklist Master' }, { id: 'attachments', label: 'Attachments' }, { id: 'data', label: 'Data' }];
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await sb.from('firm_settings').select('*').single();
-      if (data) setSettings(data);
-      setLoading(false);
-    })();
-  }, []);
+  let tabContent = '';
+  if (settingsTab === 'firm') {
+    const fields = [
+      { label: 'Firm Name', field: 'firm_name' }, { label: 'Owner / CPA Name', field: 'owner_name' },
+      { label: 'License Info', field: 'license_info' }, { label: 'Email', field: 'email' },
+      { label: 'Phone', field: 'phone' }, { label: 'Zelle ID', field: 'zelle_id' }, { label: 'Connected Email', field: 'connected_email' },
+    ];
+    tabContent = `<div class="settings-form">${fields.map(f => `<div><div class="field-label">${f.label}</div><input class="text-input" value="${esc(s[f.field] || '')}" data-field="${f.field}" data-action="update-setting" /></div>`).join('')}</div>`;
+  } else if (settingsTab === 'checklist') {
+    tabContent = renderChecklistMaster();
+  } else if (settingsTab === 'attachments') {
+    tabContent = `<div class="card" style="padding:24px"><h3 style="font-weight:600;color:#1B2A4A;margin-bottom:8px">Reminder attachments</h3><p style="font-size:13px;color:#6B7280;margin-bottom:14px">Upload files to attach to every client's reminder emails.</p><button class="btn btn-navy">+ Upload files</button><span style="margin-left:12px;font-size:13px;color:#9CA3AF">0 attachments</span></div>`;
+  } else {
+    tabContent = `<div class="card" style="padding:24px"><h3 style="font-weight:600;color:#1B2A4A;margin-bottom:14px">Data Management</h3><button class="btn">Download CSV</button><button class="btn" style="margin-left:12px">Upload CSV</button></div>`;
+  }
 
-  const updateSetting = async (field, value) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
-    await sb.from('firm_settings').update({ [field]: value }).eq('id', settings.id);
-  };
-
-  if (loading || !settings) return <div className="text-center py-20 text-gray-400">Loading…</div>;
-
-  const tabs = [
-    { id: 'firm', label: 'Firm & Email' },
-    { id: 'checklist', label: 'Checklist Master' },
-    { id: 'attachments', label: 'Attachments' },
-    { id: 'data', label: 'Data' },
-  ];
-
-  return (
-    <div>
-      <p className="text-gray-500 text-sm mb-6">Firm details, email connection, and the master checklists every new client inherits.</p>
-
-      <div className="flex gap-2 mb-6">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeTab === tab.id ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'firm' && (
-        <div className="bg-white rounded-xl p-6 card-shadow max-w-xl space-y-4">
-          {[
-            { label: 'Firm Name', field: 'firm_name' },
-            { label: 'Owner / CPA Name', field: 'owner_name' },
-            { label: 'License Info', field: 'license_info' },
-            { label: 'Email', field: 'email' },
-            { label: 'Phone', field: 'phone' },
-            { label: 'Zelle ID', field: 'zelle_id' },
-            { label: 'Connected Email', field: 'connected_email' },
-          ].map(f => (
-            <div key={f.field}>
-              <label className="text-xs font-medium text-navy/60 uppercase tracking-wide">{f.label}</label>
-              <input
-                value={settings[f.field] || ''}
-                onChange={e => updateSetting(f.field, e.target.value)}
-                className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-navy"
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {activeTab === 'checklist' && <ChecklistMasterSettings />}
-
-      {activeTab === 'attachments' && (
-        <div className="bg-white rounded-xl p-6 card-shadow">
-          <h3 className="font-semibold text-navy mb-2">Reminder attachments</h3>
-          <p className="text-sm text-gray-500 mb-4">Upload files (PDF, images, etc.) to attach to every client's reminder emails.</p>
-          <button className="px-4 py-2 bg-navy text-white rounded-lg text-sm font-medium hover:bg-navy-light">+ Upload files</button>
-          <span className="ml-3 text-sm text-gray-400">0 attachments</span>
-        </div>
-      )}
-
-      {activeTab === 'data' && (
-        <div className="bg-white rounded-xl p-6 card-shadow space-y-4">
-          <h3 className="font-semibold text-navy mb-2">Data Management</h3>
-          <button className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Download CSV</button>
-          <button className="ml-3 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Upload CSV</button>
-        </div>
-      )}
-    </div>
-  );
+  return `
+    <p class="page-desc">Firm details, email connection, and the master checklists every new client inherits.</p>
+    <div class="tabs">${tabs.map(t => `<button class="tab-btn ${settingsTab === t.id ? 'active' : ''}" data-type="${t.id}" data-action="switch-settings-tab">${t.label}</button>`).join('')}</div>
+    ${tabContent}`;
 }
 
-function ChecklistMasterSettings() {
-  const [sections, setSections] = useState([]);
-  const [activeReturn, setActiveReturn] = useState('1040');
+function renderChecklistMaster() {
+  const rt = state.checklistReturn || '1040';
+  const secs = state.checklistSections || [];
+  const filtered = secs.filter(s => s.return_type === rt);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await sb.from('checklist_sections').select('*, checklist_items(*)').order('sort_order');
-      if (data) setSections(data.map(s => ({ ...s, checklist_items: (s.checklist_items || []).sort((a, b) => a.sort_order - b.sort_order) })));
-    })();
-  }, []);
-
-  const filtered = sections.filter(s => s.return_type === activeReturn);
-
-  return (
-    <div>
-      <div className="flex gap-2 mb-4">
-        {['1040', '1065', '1120-S'].map(rt => (
-          <button
-            key={rt}
-            onClick={() => setActiveReturn(rt)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${activeReturn === rt ? 'bg-navy text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
-          >
-            Form {rt}
-          </button>
-        ))}
-      </div>
-
-      {filtered.map(sec => (
-        <div key={sec.id} className="bg-white rounded-xl card-shadow mb-4 overflow-hidden">
-          <div className="bg-blue-soft/50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
-            <h4 className="font-semibold text-navy text-sm">{sec.name}</h4>
-          </div>
-          {sec.checklist_items.map(item => (
-            <div key={item.id} className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
-              <span className="text-sm text-gray-700 flex-1">{item.name}</span>
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{item.send_via}</span>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
+  return `
+    <div class="tabs" style="margin-bottom:14px">${['1040', '1065', '1120-S'].map(r => `<button class="tab-btn ${rt === r ? 'active' : ''}" data-type="${r}" data-action="switch-checklist-return">Form ${r}</button>`).join('')}</div>
+    ${filtered.map(sec => `<div class="checklist-section"><div class="checklist-section-header">${esc(sec.name)}</div>${(sec.checklist_items || []).sort((a,b) => a.sort_order - b.sort_order).map(item => `<div class="checklist-item-row"><span>${esc(item.name)}</span><span class="via-badge">${item.send_via}</span></div>`).join('')}</div>`).join('')}`;
 }
 
-// ── Mount ──
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+// ── Event delegation ──
+function attachEvents() {
+  document.querySelectorAll('[data-nav]').forEach(btn => {
+    btn.onclick = () => navigate(btn.dataset.nav);
+  });
+
+  document.querySelectorAll('[data-action="search"]').forEach(el => {
+    el.oninput = () => setState({ search: el.value });
+  });
+
+  document.querySelectorAll('[data-action="filter-return"]').forEach(el => {
+    el.onchange = () => setState({ filterReturn: el.value });
+  });
+
+  document.querySelectorAll('[data-action="open-client"]').forEach(el => {
+    el.onclick = () => {
+      const id = el.dataset.clientId || el.closest('tr')?.dataset.clientId;
+      if (id) { setState({ selectedClientId: id, page: 'client' }); loadClientDetail(id); loadAllClients(); }
+    };
+  });
+
+  document.querySelectorAll('[data-action="select-client"]').forEach(el => {
+    el.onchange = () => { setState({ selectedClientId: el.value }); loadClientDetail(el.value); };
+  });
+
+  document.querySelectorAll('[data-action="update-doc"]').forEach(el => {
+    el.onclick = () => updateDocStatus(el.dataset.docId || null, el.dataset.itemId, el.dataset.status);
+  });
+
+  document.querySelectorAll('[data-action="switch-template"]').forEach(el => {
+    el.onclick = () => setState({ activeTemplate: el.dataset.type });
+  });
+
+  document.querySelectorAll('[data-action="update-template"]').forEach(el => {
+    el.onblur = async () => {
+      const active = state.templates.find(t => t.template_type === state.activeTemplate);
+      if (active) {
+        const val = el.tagName === 'TEXTAREA' ? el.value : el.value;
+        await sb.from('email_templates').update({ [el.dataset.field]: val }).eq('template_type', state.activeTemplate);
+        state.templates = state.templates.map(t => t.template_type === state.activeTemplate ? { ...t, [el.dataset.field]: val } : t);
+        render();
+      }
+    };
+  });
+
+  document.querySelectorAll('[data-action="switch-return"]').forEach(el => {
+    el.onclick = () => setState({ activeReturn: el.dataset.type });
+  });
+
+  document.querySelectorAll('[data-action="update-question"]').forEach(el => {
+    el.onblur = async () => {
+      await sb.from('questionnaires').update({ question: el.value }).eq('id', el.dataset.id);
+    };
+  });
+
+  document.querySelectorAll('[data-action="delete-question"]').forEach(el => {
+    el.onclick = async () => {
+      await sb.from('questionnaires').delete().eq('id', el.dataset.id);
+      await loadQuestionnaires();
+    };
+  });
+
+  document.querySelectorAll('[data-action="add-question"]').forEach(el => {
+    el.onclick = async () => {
+      const filtered = state.questionnaires.filter(q => q.return_type === state.activeReturn);
+      const maxOrder = Math.max(0, ...filtered.map(q => q.sort_order));
+      await sb.from('questionnaires').insert({ return_type: state.activeReturn, question: 'New question?', sort_order: maxOrder + 1 });
+      await loadQuestionnaires();
+    };
+  });
+
+  document.querySelectorAll('[data-action="switch-settings-tab"]').forEach(el => {
+    el.onclick = async () => {
+      state.settingsTab = el.dataset.type;
+      if (el.dataset.type === 'checklist' && !state.checklistSections?.length) {
+        const { data } = await sb.from('checklist_sections').select('*, checklist_items(*)').order('sort_order');
+        state.checklistSections = data || [];
+      }
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-action="switch-checklist-return"]').forEach(el => {
+    el.onclick = () => { state.checklistReturn = el.dataset.type; render(); };
+  });
+
+  document.querySelectorAll('[data-action="update-setting"]').forEach(el => {
+    el.onblur = async () => {
+      state.settings[el.dataset.field] = el.value;
+      await sb.from('firm_settings').update({ [el.dataset.field]: el.value }).eq('id', state.settings.id);
+    };
+  });
+
+  document.querySelectorAll('[data-action="toggle-send-mode"]').forEach(el => {
+    el.onclick = async () => {
+      const v = state.settings.send_mode === 'draft' ? 'auto' : 'draft';
+      state.settings.send_mode = v;
+      await sb.from('firm_settings').update({ send_mode: v }).eq('id', state.settings.id);
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-action="toggle-daily"]').forEach(el => {
+    el.onclick = async () => {
+      const v = !state.settings.daily_automation;
+      state.settings.daily_automation = v;
+      await sb.from('firm_settings').update({ daily_automation: v }).eq('id', state.settings.id);
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-action="update-schedule"]').forEach(el => {
+    el.onblur = async () => {
+      const v = parseInt(el.value) || 0;
+      state.settings[el.dataset.field] = v;
+      await sb.from('firm_settings').update({ [el.dataset.field]: v }).eq('id', state.settings.id);
+    };
+  });
+
+  document.querySelectorAll('[data-action="toggle-roster"]').forEach(el => {
+    el.onchange = async () => {
+      const id = el.dataset.clientId;
+      const current = el.checked;
+      await sb.from('clients').update({ on_reminder_roster: current }).eq('id', id);
+      state.rosterClients = state.rosterClients.map(c => c.id === id ? { ...c, on_reminder_roster: current } : c);
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-action="roster-all"]').forEach(el => {
+    el.onclick = async () => {
+      await sb.from('clients').update({ on_reminder_roster: true }).eq('status', 'Active');
+      state.rosterClients = state.rosterClients.map(c => ({ ...c, on_reminder_roster: true }));
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-action="roster-clear"]').forEach(el => {
+    el.onclick = async () => {
+      await sb.from('clients').update({ on_reminder_roster: false }).eq('status', 'Active');
+      state.rosterClients = state.rosterClients.map(c => ({ ...c, on_reminder_roster: false }));
+      render();
+    };
+  });
+
+  document.querySelectorAll('[data-action="save-call-notes"]').forEach(el => {
+    el.onblur = async () => {
+      await sb.from('clients').update({ call_notes: el.value }).eq('id', el.dataset.clientId);
+    };
+  });
+
+  document.querySelectorAll('[data-action="mark-called"]').forEach(el => {
+    el.onclick = async () => {
+      await sb.from('call_log').insert({ client_id: el.dataset.clientId, notes: 'Called' });
+    };
+  });
+
+  document.querySelectorAll('[data-action="remove-escalation"]').forEach(el => {
+    el.onclick = async () => {
+      await sb.from('clients').update({ escalated: false, escalated_at: null }).eq('id', el.dataset.clientId);
+      await loadCallList();
+    };
+  });
+}
+
+// ── Navigation ──
+async function navigate(page) {
+  setState({ page, loading: true });
+  switch (page) {
+    case 'dashboard': await loadDashboard(); break;
+    case 'client': await loadAllClients(); break;
+    case 'calllist': await loadCallList(); break;
+    case 'automation': await loadSettings(); await loadRoster(); break;
+    case 'templates': await loadTemplates(); break;
+    case 'questionnaires': await loadQuestionnaires(); break;
+    case 'settings': await loadSettings(); break;
+  }
+  setState({ loading: false });
+}
+
+// ── Init ──
+(async function init() {
+  render();
+  await loadDashboard();
+})();
 </script>
 </body>
 </html>
