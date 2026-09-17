@@ -7,143 +7,132 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', system-ui, sans-serif; background: #F7F8FC; color: #1B2A4A; height: 100vh; overflow: hidden; }
-.app { display: flex; height: 100vh; }
-.sidebar { width: 220px; background: #1B2A4A; flex-shrink: 0; display: flex; flex-direction: column; }
-.sidebar-brand { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; }
-.brand-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(212,168,67,0.2); display: flex; align-items: center; justify-content: center; color: #D4A843; font-weight: 700; font-size: 13px; }
-.brand-name { color: #fff; font-size: 14px; font-weight: 600; line-height: 1.2; }
-.brand-sub { color: #D4A843; font-size: 11px; }
-.nav { flex: 1; padding: 8px 0; overflow-y: auto; }
-.nav-btn { width: 100%; text-align: left; padding: 10px 16px; border: none; background: none; color: rgba(255,255,255,0.5); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: inherit; border-left: 3px solid transparent; transition: all 0.15s; }
-.nav-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
-.nav-btn.active { background: rgba(255,255,255,0.12); color: #fff; border-left-color: #D4A843; }
-.nav-icon { width: 18px; text-align: center; font-size: 14px; }
-.sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); font-size: 11px; }
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.topbar { background: rgba(27,42,74,0.95); padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.topbar-title { color: #fff; font-size: 16px; font-weight: 600; flex: 1; }
-.topbar-right { display: flex; align-items: center; gap: 10px; }
-.topbar select { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 13px; font-family: inherit; }
-.topbar-label { color: rgba(255,255,255,0.5); font-size: 13px; }
-.content { flex: 1; overflow-y: auto; padding: 24px; }
-.card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
-.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
-.summary-card { background: #fff; border-radius: 12px; border: 2px solid #E5E7EB; padding: 16px; box-shadow: 0 1px 3px rgba(27,42,74,0.06); }
-.summary-card .label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
-.summary-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
-.sc-navy { border-color: #1B2A4A; color: #1B2A4A; } .sc-green { border-color: #22C55E; color: #22C55E; } .sc-orange { border-color: #F59E0B; color: #F59E0B; } .sc-red { border-color: #EF4444; color: #EF4444; }
-.search-row { display: flex; gap: 12px; margin-bottom: 14px; }
-.search-input { flex: 1; padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; }
-.search-input:focus { border-color: #1B2A4A; box-shadow: 0 0 0 2px rgba(27,42,74,0.1); }
-.filter-select { padding: 10px 14px; border: 1px solid #E5E7EB; border-radius: 8px; font-size: 13px; font-family: inherit; outline: none; }
-.showing-text { font-size: 11px; color: #9CA3AF; margin-bottom: 6px; }
-.table-wrap { border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
-table { width: 100%; border-collapse: collapse; background: #fff; }
-thead th { text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 500; color: #6B7280; border-bottom: 1px solid #F3F4F6; }
-thead th.center { text-align: center; }
-tbody tr { border-bottom: 1px solid #F9FAFB; cursor: pointer; transition: background 0.1s; }
-tbody tr:hover { background: rgba(232,237,245,0.3); }
-tbody td { padding: 10px 14px; font-size: 13px; }
-tbody td.center { text-align: center; }
-.client-name { font-weight: 500; color: #1B2A4A; }
-.badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
-.badge-green { background: #DEF7EC; color: #03543F; } .badge-amber { background: #FDF6B2; color: #92400E; } .badge-red { background: #FEE2E2; color: #991B1B; }
-.progress-wrap { display: flex; align-items: center; gap: 8px; }
-.progress-bar-bg { flex: 1; height: 6px; background: #F3F4F6; border-radius: 3px; overflow: hidden; }
-.progress-bar-fill { height: 100%; background: #1B2A4A; border-radius: 3px; transition: width 0.4s ease; }
-.progress-text { font-size: 11px; color: #9CA3AF; min-width: 40px; text-align: right; }
-.needed-count { font-weight: 600; } .needed-count.has { color: #F59E0B; } .needed-count.none { color: #D1D5DB; }
-.page-desc { color: #6B7280; font-size: 13px; margin-bottom: 20px; }
-.loading { text-align: center; padding: 80px 20px; color: #9CA3AF; font-size: 14px; }
-/* Client View */
-.client-layout { display: flex; gap: 24px; }
-.client-sidebar { width: 280px; flex-shrink: 0; }
-.client-sidebar > * + * { margin-top: 14px; }
-.client-info-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
-.info-label { font-size: 11px; font-weight: 500; color: rgba(27,42,74,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-.client-select, .eng-select { width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; }
-.info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
-.info-key { color: #9CA3AF; } .info-val { font-weight: 500; color: #1B2A4A; text-align: right; max-width: 180px; word-break: break-all; font-size: 12px; }
-.actions-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); display: flex; flex-direction: column; gap: 8px; }
-.btn { padding: 9px 14px; border-radius: 8px; border: 1px solid #E5E7EB; background: #fff; font-size: 13px; font-family: inherit; cursor: pointer; text-align: center; transition: background 0.15s; }
-.btn:hover { background: #F9FAFB; }
-.btn-gold { background: #D4A843; color: #1B2A4A; border-color: #D4A843; font-weight: 600; }
-.btn-gold:hover { background: #c99b3a; }
-.btn-red { color: #EF4444; border-color: #FCA5A5; }
-.btn-navy { background: #1B2A4A; color: #fff; border-color: #1B2A4A; font-weight: 500; }
-.btn-navy:hover { background: #243556; }
-.btn-sm { padding: 6px 12px; font-size: 12px; }
-.needed-banner { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; font-weight: 500; color: #92400E; }
-.section-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); margin-bottom: 14px; overflow: hidden; }
-.section-header { background: rgba(232,237,245,0.5); padding: 10px 16px; border-bottom: 1px solid #F3F4F6; font-size: 13px; font-weight: 600; color: #1B2A4A; }
-.doc-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #F9FAFB; }
-.doc-row:last-child { border-bottom: none; }
-.doc-info { flex: 1; margin-right: 14px; }
-.doc-name { font-size: 13px; color: #374151; } .doc-via { font-size: 10px; color: rgba(27,42,74,0.35); text-transform: uppercase; margin-top: 2px; }
-.doc-btns { display: flex; gap: 6px; }
-.doc-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid #E5E7EB; background: #fff; font-size: 11px; font-weight: 500; cursor: pointer; color: #9CA3AF; transition: all 0.15s; font-family: inherit; }
-.doc-btn:hover { transform: translateY(-1px); }
-.doc-btn.a-recv { background: #DEF7EC; color: #03543F; border-color: #84E1BC; }
-.doc-btn.a-need { background: #FDF6B2; color: #723B13; border-color: #FCE96A; }
-.doc-btn.a-na { background: #F3F4F6; color: #6B7280; border-color: #D1D5DB; }
-/* Modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #fff; border-radius: 16px; padding: 24px; width: 480px; max-width: 90vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-.modal h2 { font-size: 18px; font-weight: 700; color: #1B2A4A; margin-bottom: 20px; }
-.modal-field { margin-bottom: 14px; }
-.modal-field label { display: block; font-size: 11px; font-weight: 500; color: rgba(27,42,74,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-.modal-field input, .modal-field select { width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: inherit; outline: none; }
-.modal-field input:focus, .modal-field select:focus { border-color: #1B2A4A; box-shadow: 0 0 0 2px rgba(27,42,74,0.08); }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-.modal-row { display: flex; gap: 12px; }
-.modal-row > * { flex: 1; }
-/* Tabs */
-.tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-.tab-btn { padding: 8px 16px; border-radius: 99px; border: 1px solid #E5E7EB; background: #fff; font-size: 13px; font-family: inherit; cursor: pointer; color: #4B5563; transition: all 0.15s; }
-.tab-btn:hover { background: #F9FAFB; } .tab-btn.active { background: #1B2A4A; color: #fff; border-color: #1B2A4A; }
-/* Templates */
-.template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.template-editor { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
-.template-editor > * + * { margin-top: 14px; }
-.field-label { font-size: 11px; font-weight: 500; color: rgba(27,42,74,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-.text-input { width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none; }
-.text-input:focus { border-color: #1B2A4A; }
-.textarea { width: 100%; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: inherit; outline: none; resize: none; min-height: 200px; }
-.preview-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); overflow: hidden; }
-.preview-subject { background: #F9FAFB; padding: 10px 16px; border-bottom: 1px solid #F3F4F6; }
-.preview-banner { background: #1B2A4A; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
-.preview-banner h3 { color: #fff; font-size: 17px; font-weight: 700; }
-.preview-banner p { color: #D4A843; font-size: 13px; margin-top: 2px; }
-/* Automation */
-.info-box { background: #F5EDD6; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-.info-box h3 { font-weight: 600; color: #1B2A4A; margin-bottom: 8px; font-size: 14px; }
-.info-box ol { padding-left: 20px; font-size: 13px; color: #374151; line-height: 1.8; }
-.toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-.toggle-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); }
-.toggle-card h4 { font-weight: 600; color: #1B2A4A; margin-bottom: 4px; font-size: 14px; }
-.toggle-card p { font-size: 12px; color: #6B7280; margin-bottom: 12px; }
-.toggle { position: relative; width: 44px; height: 24px; border-radius: 12px; background: #D1D5DB; cursor: pointer; border: none; transition: background 0.2s; }
-.toggle.on { background: #1B2A4A; }
-.toggle-knob { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; }
-.toggle.on .toggle-knob { transform: translateX(20px); }
-.schedule-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-.schedule-card { border: 2px solid #E5E7EB; border-radius: 12px; padding: 16px; }
-.schedule-card.gold { border-color: #D4A843; } .schedule-card.navy { border-color: #1B2A4A; } .schedule-card.red { border-color: #EF4444; }
-.schedule-label { font-size: 11px; font-weight: 500; color: rgba(27,42,74,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-.schedule-input { width: 60px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 6px; text-align: center; font-size: 13px; font-weight: 500; font-family: inherit; outline: none; }
-/* Call list */
-.call-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(27,42,74,0.08); padding: 20px; border-left: 4px solid #D4A843; margin-bottom: 14px; }
-.call-name { font-size: 17px; font-weight: 600; color: #1B2A4A; cursor: pointer; }
-.call-name:hover { text-decoration: underline; }
-.empty-state { text-align: center; padding: 60px 20px; }
-.empty-icon { font-size: 40px; margin-bottom: 12px; }
-.empty-text { color: #6B7280; font-size: 14px; }
-/* Eng badges */
-.eng-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.eng-badge { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: #E8EDF5; color: #1B2A4A; font-weight: 500; }
-.eng-badge.active { background: #1B2A4A; color: #fff; cursor: pointer; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#F7F8FC;color:#1B2A4A;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+.sidebar{width:220px;background:#1B2A4A;flex-shrink:0;display:flex;flex-direction:column}
+.sidebar-brand{padding:16px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:10px}
+.brand-icon{width:32px;height:32px;border-radius:8px;background:rgba(212,168,67,0.2);display:flex;align-items:center;justify-content:center;color:#D4A843;font-weight:700;font-size:13px}
+.brand-name{color:#fff;font-size:14px;font-weight:600;line-height:1.2}.brand-sub{color:#D4A843;font-size:11px}
+.nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-btn{width:100%;text-align:left;padding:10px 16px;border:none;background:none;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:inherit;border-left:3px solid transparent;transition:all 0.15s}
+.nav-btn:hover{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8)}
+.nav-btn.active{background:rgba(255,255,255,0.12);color:#fff;border-left-color:#D4A843}
+.nav-icon{width:18px;text-align:center;font-size:14px}
+.sidebar-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);font-size:11px}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:rgba(27,42,74,0.95);padding:12px 24px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.topbar-title{color:#fff;font-size:16px;font-weight:600;flex:1}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar select{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:6px;padding:4px 8px;font-size:13px;font-family:inherit}
+.topbar-label{color:rgba(255,255,255,0.5);font-size:13px}
+.content{flex:1;overflow-y:auto;padding:24px}
+.card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(27,42,74,0.08)}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.summary-card{background:#fff;border-radius:12px;border:2px solid #E5E7EB;padding:16px;box-shadow:0 1px 3px rgba(27,42,74,0.06)}
+.summary-card .label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;opacity:0.7}
+.summary-card .value{font-size:28px;font-weight:700;margin-top:4px}
+.sc-navy{border-color:#1B2A4A;color:#1B2A4A}.sc-green{border-color:#22C55E;color:#22C55E}.sc-orange{border-color:#F59E0B;color:#F59E0B}.sc-red{border-color:#EF4444;color:#EF4444}
+.search-row{display:flex;gap:12px;margin-bottom:14px}
+.search-input{flex:1;padding:10px 14px;border:1px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none}
+.search-input:focus{border-color:#1B2A4A;box-shadow:0 0 0 2px rgba(27,42,74,0.1)}
+.filter-select{padding:10px 14px;border:1px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:inherit;outline:none}
+.showing-text{font-size:11px;color:#9CA3AF;margin-bottom:6px}
+.table-wrap{border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(27,42,74,0.08)}
+table{width:100%;border-collapse:collapse;background:#fff}
+thead th{text-align:left;padding:10px 14px;font-size:12px;font-weight:500;color:#6B7280;border-bottom:1px solid #F3F4F6}
+thead th.center{text-align:center}
+tbody tr{border-bottom:1px solid #F9FAFB;cursor:pointer;transition:background 0.1s}
+tbody tr:hover{background:rgba(232,237,245,0.3)}
+tbody td{padding:10px 14px;font-size:13px}
+tbody td.center{text-align:center}
+.client-name{font-weight:500;color:#1B2A4A}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500}
+.badge-green{background:#DEF7EC;color:#03543F}.badge-amber{background:#FDF6B2;color:#92400E}.badge-red{background:#FEE2E2;color:#991B1B}.badge-blue{background:#E8EDF5;color:#1B2A4A}
+.progress-wrap{display:flex;align-items:center;gap:8px}
+.progress-bar-bg{flex:1;height:6px;background:#F3F4F6;border-radius:3px;overflow:hidden}
+.progress-bar-fill{height:100%;background:#1B2A4A;border-radius:3px;transition:width 0.4s ease}
+.progress-text{font-size:11px;color:#9CA3AF;min-width:40px;text-align:right}
+.needed-count{font-weight:600}.needed-count.has{color:#F59E0B}.needed-count.none{color:#D1D5DB}
+.page-desc{color:#6B7280;font-size:13px;margin-bottom:20px}
+.loading{text-align:center;padding:80px 20px;color:#9CA3AF;font-size:14px}
+.client-layout{display:flex;gap:24px}
+.client-sidebar{width:280px;flex-shrink:0}.client-sidebar>*+*{margin-top:14px}
+.client-info-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(27,42,74,0.08)}
+.info-label{font-size:11px;font-weight:500;color:rgba(27,42,74,0.4);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.client-select,.eng-select{width:100%;border:1px solid #E5E7EB;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none}
+.info-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px}
+.info-key{color:#9CA3AF}.info-val{font-weight:500;color:#1B2A4A;text-align:right;max-width:180px;word-break:break-all;font-size:12px}
+.actions-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(27,42,74,0.08);display:flex;flex-direction:column;gap:8px}
+.btn{padding:9px 14px;border-radius:8px;border:1px solid #E5E7EB;background:#fff;font-size:13px;font-family:inherit;cursor:pointer;text-align:center;transition:background 0.15s}
+.btn:hover{background:#F9FAFB}
+.btn-gold{background:#D4A843;color:#1B2A4A;border-color:#D4A843;font-weight:600}.btn-gold:hover{background:#c99b3a}
+.btn-red{color:#EF4444;border-color:#FCA5A5}.btn-red:hover{background:#FEF2F2}
+.btn-navy{background:#1B2A4A;color:#fff;border-color:#1B2A4A;font-weight:500}.btn-navy:hover{background:#243556}
+.btn-sm{padding:6px 12px;font-size:12px}
+.needed-banner{background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;font-weight:500;color:#92400E}
+.section-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(27,42,74,0.08);margin-bottom:14px;overflow:hidden}
+.section-header{background:rgba(232,237,245,0.5);padding:10px 16px;border-bottom:1px solid #F3F4F6;font-size:13px;font-weight:600;color:#1B2A4A}
+.doc-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #F9FAFB}
+.doc-row:last-child{border-bottom:none}
+.doc-info{flex:1;margin-right:14px}
+.doc-name{font-size:13px;color:#374151}.doc-via{font-size:10px;color:rgba(27,42,74,0.35);text-transform:uppercase;margin-top:2px}
+.doc-btns{display:flex;gap:6px}
+.doc-btn{padding:4px 12px;border-radius:6px;border:1px solid #E5E7EB;background:#fff;font-size:11px;font-weight:500;cursor:pointer;color:#9CA3AF;transition:all 0.15s;font-family:inherit}
+.doc-btn:hover{transform:translateY(-1px)}
+.doc-btn.a-recv{background:#DEF7EC;color:#03543F;border-color:#84E1BC}
+.doc-btn.a-need{background:#FDF6B2;color:#723B13;border-color:#FCE96A}
+.doc-btn.a-na{background:#F3F4F6;color:#6B7280;border-color:#D1D5DB}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:#fff;border-radius:16px;padding:24px;width:480px;max-width:90vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal h2{font-size:18px;font-weight:700;color:#1B2A4A;margin-bottom:20px}
+.modal-field{margin-bottom:14px}
+.modal-field label{display:block;font-size:11px;font-weight:500;color:rgba(27,42,74,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.modal-field input,.modal-field select{width:100%;border:1px solid #E5E7EB;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
+.modal-field input:focus,.modal-field select:focus{border-color:#1B2A4A;box-shadow:0 0 0 2px rgba(27,42,74,0.08)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.modal-row{display:flex;gap:12px}.modal-row>*{flex:1}
+.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{padding:8px 16px;border-radius:99px;border:1px solid #E5E7EB;background:#fff;font-size:13px;font-family:inherit;cursor:pointer;color:#4B5563;transition:all 0.15s}
+.tab-btn:hover{background:#F9FAFB}.tab-btn.active{background:#1B2A4A;color:#fff;border-color:#1B2A4A}
+.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.template-editor{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(27,42,74,0.08)}
+.template-editor>*+*{margin-top:14px}
+.field-label{font-size:11px;font-weight:500;color:rgba(27,42,74,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.text-input{width:100%;border:1px solid #E5E7EB;border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;outline:none}
+.text-input:focus{border-color:#1B2A4A}
+.textarea{width:100%;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;resize:none;min-height:200px}
+.preview-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(27,42,74,0.08);overflow:hidden}
+.preview-subject{background:#F9FAFB;padding:10px 16px;border-bottom:1px solid #F3F4F6}
+.preview-banner{background:#1B2A4A;border-radius:8px;padding:16px 20px;margin-bottom:20px}
+.preview-banner h3{color:#fff;font-size:17px;font-weight:700}.preview-banner p{color:#D4A843;font-size:13px;margin-top:2px}
+.info-box{background:#F5EDD6;border-radius:12px;padding:20px;margin-bottom:20px}
+.info-box h3{font-weight:600;color:#1B2A4A;margin-bottom:8px;font-size:14px}
+.info-box ol{padding-left:20px;font-size:13px;color:#374151;line-height:1.8}
+.toggle-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.toggle-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(27,42,74,0.08)}
+.toggle-card h4{font-weight:600;color:#1B2A4A;margin-bottom:4px;font-size:14px}
+.toggle-card p{font-size:12px;color:#6B7280;margin-bottom:12px}
+.toggle{position:relative;width:44px;height:24px;border-radius:12px;background:#D1D5DB;cursor:pointer;border:none;transition:background 0.2s}
+.toggle.on{background:#1B2A4A}
+.toggle-knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:transform 0.2s}
+.toggle.on .toggle-knob{transform:translateX(20px)}
+.schedule-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.schedule-card{border:2px solid #E5E7EB;border-radius:12px;padding:16px}
+.schedule-card.gold{border-color:#D4A843}.schedule-card.navy{border-color:#1B2A4A}.schedule-card.red{border-color:#EF4444}
+.schedule-label{font-size:11px;font-weight:500;color:rgba(27,42,74,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.schedule-input{width:60px;border:1px solid #E5E7EB;border-radius:8px;padding:6px;text-align:center;font-size:13px;font-weight:500;font-family:inherit;outline:none}
+.call-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(27,42,74,0.08);padding:20px;border-left:4px solid #D4A843;margin-bottom:14px}
+.call-name{font-size:17px;font-weight:600;color:#1B2A4A;cursor:pointer}.call-name:hover{text-decoration:underline}
+.empty-state{text-align:center;padding:60px 20px}
+.empty-icon{font-size:40px;margin-bottom:12px}.empty-text{color:#6B7280;font-size:14px}
+.eng-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.eng-badge{font-size:11px;padding:3px 8px;border-radius:6px;background:#E8EDF5;color:#1B2A4A;font-weight:500;cursor:pointer}
+.eng-badge.active{background:#1B2A4A;color:#fff}
+.cat-badge{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.cat-tax{background:#DBEAFE;color:#1E40AF}.cat-advisory{background:#FDE68A;color:#78350F}.cat-formation{background:#D1FAE5;color:#065F46}
+.type-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #F9FAFB;font-size:13px}
+.type-row:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -152,42 +141,45 @@ tbody td.center { text-align: center; }
 const SUPABASE_URL='https://grmynepeyoeyvjpaityw.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdybXluZXBleW9leXZqcGFpdHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MjQ3NjAsImV4cCI6MjEwNTIwMDc2MH0.3SgjI69FvcsmSM2Em1PF4NYWo8Plq5fa-dpxnCfzbPY';
 let sb;
-try{const{createClient}=supabase;sb=createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){document.getElementById('root').innerHTML='<div style="padding:40px;color:red"><h2>Supabase Error</h2><pre>'+e.message+'</pre></div>';throw e}
+try{const{createClient}=supabase;sb=createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){document.getElementById('root').innerHTML='<div style="padding:40px;color:red"><h2>Error</h2><pre>'+e.message+'</pre></div>';throw e}
 
-let S={page:'dashboard',modal:null,search:'',filterReturn:'all',summary:{total_active:0,ready_to_prepare:0,waiting:0,on_call_list:0},dashClients:[],allClients:[],clientEngagements:[],selectedClientId:null,selectedEngId:null,engDetail:null,engSections:[],callList:[],settings:null,templates:[],activeTemplate:'all_received',questionnaires:[],activeReturn:'1040',rosterData:[],settingsTab:'firm',checklistReturn:'1040',checklistSections:[],loading:true};
+let S={page:'dashboard',modal:null,search:'',filterType:'all',filterCat:'all',summary:{total_active:0,ready_to_prepare:0,waiting:0,on_call_list:0},dashClients:[],allClients:[],engTypes:[],clientEngagements:[],selectedClientId:null,selectedEngId:null,engDetail:null,engSections:[],callList:[],settings:null,templates:[],activeTemplate:'all_received',questionnaires:[],activeTypeCode:'1040',rosterData:[],settingsTab:'firm',checklistTypeCode:'1040',checklistSections:[],loading:true};
 function set(u){Object.assign(S,u);render()}
 function esc(s){let d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function catClass(c){return c==='Tax'?'cat-tax':c==='Advisory'?'cat-advisory':'cat-formation'}
 
 // ── DATA ──
+async function loadEngTypes(){
+  const{data}=await sb.from('engagement_types').select('*').eq('is_active',true).order('sort_order');
+  S.engTypes=data||[];
+}
 async function loadDashboard(){
   set({loading:true});
+  if(S.engTypes.length===0)await loadEngTypes();
   const[{data:s},{data:c}]=await Promise.all([sb.from('v_dashboard_summary').select('*').single(),sb.from('v_client_dashboard').select('*').eq('client_status','Active').order('name')]);
   set({summary:s||S.summary,dashClients:c||[],loading:false});
 }
-async function loadAllClients(){
-  const{data}=await sb.from('clients').select('*').order('name');
-  set({allClients:data||[]});
-}
-async function loadClientEngagements(clientId){
-  const{data}=await sb.from('engagements').select('*').eq('client_id',clientId).order('tax_year',{ascending:false});
+async function loadAllClients(){const{data}=await sb.from('clients').select('*').order('name');set({allClients:data||[]})}
+async function loadClientEngagements(cid){
+  const{data}=await sb.from('engagements').select('*').eq('client_id',cid).order('tax_year',{ascending:false});
   S.clientEngagements=data||[];
-  if(data&&data.length>0&&!S.selectedEngId){S.selectedEngId=data[0].id}
+  if(data&&data.length>0&&!S.selectedEngId)S.selectedEngId=data[0].id;
   if(S.selectedEngId)await loadEngDetail(S.selectedEngId);
   else set({engDetail:null,engSections:[],loading:false});
 }
-async function loadEngDetail(engId){
+async function loadEngDetail(eid){
   set({loading:true});
-  const{data:e}=await sb.from('engagements').select('*').eq('id',engId).single();
+  const{data:e}=await sb.from('engagements').select('*').eq('id',eid).single();
   if(!e){set({loading:false});return}
-  const{data:secs}=await sb.from('checklist_sections').select('*, checklist_items(*)').eq('return_type',e.return_type).order('sort_order');
-  const{data:docs}=await sb.from('client_documents').select('*').eq('engagement_id',engId);
+  const{data:secs}=await sb.from('checklist_sections').select('*, checklist_items(*)').eq('engagement_type_code',e.engagement_type_code).order('sort_order');
+  const{data:docs}=await sb.from('client_documents').select('*').eq('engagement_id',eid);
   const dm={};(docs||[]).forEach(d=>{dm[d.checklist_item_id]=d});
   const enriched=(secs||[]).map(sec=>({...sec,checklist_items:(sec.checklist_items||[]).sort((a,b)=>a.sort_order-b.sort_order).map(item=>({...item,doc_id:dm[item.id]?.id,doc_status:dm[item.id]?.status||'Needed'}))}));
   set({engDetail:e,engSections:enriched,loading:false});
 }
-async function updateDocStatus(docId,itemId,newStatus){
-  if(docId)await sb.from('client_documents').update({status:newStatus}).eq('id',docId);
-  else await sb.from('client_documents').insert({client_id:S.selectedClientId,engagement_id:S.selectedEngId,checklist_item_id:itemId,status:newStatus});
+async function updateDocStatus(docId,itemId,ns){
+  if(docId)await sb.from('client_documents').update({status:ns}).eq('id',docId);
+  else await sb.from('client_documents').insert({client_id:S.selectedClientId,engagement_id:S.selectedEngId,checklist_item_id:itemId,status:ns});
   await loadEngDetail(S.selectedEngId);loadDashboard();
 }
 async function loadCallList(){set({loading:true});const{data}=await sb.from('v_call_list').select('*');set({callList:data||[],loading:false})}
@@ -196,37 +188,38 @@ async function loadQuestionnaires(){set({loading:true});const{data}=await sb.fro
 async function loadSettings(){set({loading:true});const{data}=await sb.from('firm_settings').select('*').single();set({settings:data,loading:false})}
 async function loadRoster(){const{data}=await sb.from('v_client_dashboard').select('*').eq('client_status','Active').order('name');set({rosterData:data||[]})}
 
-// ── ADD CLIENT ──
-async function addClient(name,email,workPhone,homePhone,mobilePhone){
-  const{data,error}=await sb.from('clients').insert({name,email:email||null,work_phone:workPhone||null,home_phone:homePhone||null,mobile_phone:mobilePhone||null,status:'Active'}).select().single();
+async function addClient(name,email,wp,hp,mp){
+  const{data,error}=await sb.from('clients').insert({name,email:email||null,work_phone:wp||null,home_phone:hp||null,mobile_phone:mp||null,status:'Active'}).select().single();
   if(error){alert('Error: '+error.message);return}
-  set({modal:null});await loadDashboard();await loadAllClients();
-  return data;
+  S.selectedClientId=data.id;S.selectedEngId=null;
+  set({modal:'add-engagement',page:'client'});
+  await loadAllClients();await loadClientEngagements(data.id);
 }
-
-// ── EDIT CLIENT ──
 async function editClient(id,fields){
   await sb.from('clients').update(fields).eq('id',id);
   set({modal:null});await loadDashboard();await loadAllClients();
   if(S.selectedClientId===id)await loadClientEngagements(id);
 }
-
-// ── ADD ENGAGEMENT ──
-async function addEngagement(clientId,returnType,taxYear){
-  const{data:eng,error}=await sb.from('engagements').insert({client_id:clientId,return_type:returnType,tax_year:parseInt(taxYear),status:'Waiting'}).select().single();
+async function addEngagement(cid,typeCode,taxYear){
+  const{data:eng,error}=await sb.from('engagements').insert({client_id:cid,engagement_type_code:typeCode,tax_year:parseInt(taxYear),status:'Waiting'}).select().single();
   if(error){alert('Error: '+error.message);return}
-  // Auto-generate checklist documents
-  const{data:items}=await sb.from('checklist_sections').select('checklist_items(id)').eq('return_type',returnType);
+  const{data:items}=await sb.from('checklist_sections').select('checklist_items(id)').eq('engagement_type_code',typeCode);
   const docs=[];
-  (items||[]).forEach(sec=>(sec.checklist_items||[]).forEach(item=>{docs.push({client_id:clientId,engagement_id:eng.id,checklist_item_id:item.id,status:'Needed'})}));
+  (items||[]).forEach(sec=>(sec.checklist_items||[]).forEach(item=>{docs.push({client_id:cid,engagement_id:eng.id,checklist_item_id:item.id,status:'Needed'})}));
   if(docs.length>0)await sb.from('client_documents').insert(docs);
   set({modal:null,selectedEngId:eng.id});
-  await loadClientEngagements(clientId);await loadDashboard();
+  await loadClientEngagements(cid);await loadDashboard();
+}
+async function addEngType(code,name,category){
+  const maxOrder=Math.max(0,...S.engTypes.map(t=>t.sort_order));
+  const{error}=await sb.from('engagement_types').insert({code,name,category,sort_order:maxOrder+1});
+  if(error){alert('Error: '+error.message);return}
+  set({modal:null});await loadEngTypes();render();
 }
 
-// ── NAV ──
 async function navigate(page){
   set({page,loading:true});
+  if(S.engTypes.length===0)await loadEngTypes();
   switch(page){
     case'dashboard':await loadDashboard();break;
     case'client':await loadAllClients();if(S.selectedClientId)await loadClientEngagements(S.selectedClientId);else if(S.allClients.length>0){S.selectedClientId=S.allClients[0].id;await loadClientEngagements(S.allClients[0].id)}break;
@@ -235,8 +228,7 @@ async function navigate(page){
     case'templates':await loadTemplates();break;
     case'questionnaires':await loadQuestionnaires();break;
     case'settings':await loadSettings();break;
-  }
-  set({loading:false});
+  }set({loading:false});
 }
 
 // ── RENDER ──
@@ -244,45 +236,30 @@ function render(){
   const root=document.getElementById('root');
   const navItems=[{id:'dashboard',label:'Dashboard',icon:'▦'},{id:'client',label:'Client View',icon:'◉'},{id:'calllist',label:'Call List',icon:'✆'},{id:'automation',label:'Automation',icon:'⟳'},{id:'templates',label:'Templates',icon:'✉'},{id:'questionnaires',label:'Questionnaires',icon:'?'},{id:'settings',label:'Settings',icon:'⚙'}];
   const titles={dashboard:'Dashboard',client:'Client View',calllist:'Call List',automation:'Automation',templates:'Email Templates',questionnaires:'Questionnaires',settings:'Settings'};
-
   let content='';
-  switch(S.page){
-    case'dashboard':content=renderDashboard();break;case'client':content=renderClientView();break;case'calllist':content=renderCallList();break;
-    case'automation':content=renderAutomation();break;case'templates':content=renderTemplates();break;case'questionnaires':content=renderQuestionnaires();break;case'settings':content=renderSettings();break;
-  }
-
+  switch(S.page){case'dashboard':content=renderDashboard();break;case'client':content=renderClientView();break;case'calllist':content=renderCallList();break;case'automation':content=renderAutomation();break;case'templates':content=renderTemplates();break;case'questionnaires':content=renderQuestionnaires();break;case'settings':content=renderSettings();break}
   root.innerHTML=`
-  <aside class="sidebar">
-    <div class="sidebar-brand"><div class="brand-icon">H4</div><div><div class="brand-name">H4 Accounting</div><div class="brand-sub">Document Portal</div></div></div>
-    <nav class="nav">${navItems.map(n=>`<button class="nav-btn ${S.page===n.id?'active':''}" data-nav="${n.id}"><span class="nav-icon">${n.icon}</span>${n.label}</button>`).join('')}</nav>
-    <div class="sidebar-footer">Tax Year 2026</div>
-  </aside>
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-title">${titles[S.page]}</div>
-      <div class="topbar-right">
-        ${S.page==='client'?`<button class="btn btn-sm" data-action="show-edit-client" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">Edit Client</button><button class="btn btn-sm btn-gold" data-action="show-add-client">+ Add Client</button>`:''}
-        ${S.page==='dashboard'?`<button class="btn btn-sm btn-gold" data-action="show-add-client">+ Add Client</button>`:''}
-        <span class="topbar-label">Tax Year</span>
-        <select><option>2026</option><option>2025</option></select>
-      </div>
-    </div>
-    <div class="content">${content}</div>
-  </div>
-  ${S.modal?renderModal():''}`;
+  <aside class="sidebar"><div class="sidebar-brand"><div class="brand-icon">H4</div><div><div class="brand-name">H4 Accounting</div><div class="brand-sub">Document Portal</div></div></div>
+  <nav class="nav">${navItems.map(n=>`<button class="nav-btn ${S.page===n.id?'active':''}" data-nav="${n.id}"><span class="nav-icon">${n.icon}</span>${n.label}</button>`).join('')}</nav>
+  <div class="sidebar-footer">H4 Accounting LLC</div></aside>
+  <div class="main"><div class="topbar"><div class="topbar-title">${titles[S.page]}</div><div class="topbar-right">
+    ${S.page==='client'?`<button class="btn btn-sm" data-action="show-edit-client" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">Edit Client</button>`:''}
+    ${S.page==='dashboard'||S.page==='client'?`<button class="btn btn-sm btn-gold" data-action="show-add-client">+ Add Client</button>`:''}</div></div>
+  <div class="content">${content}</div></div>${S.modal?renderModal():''}`;
   attachEvents();
 }
 
-// ── DASHBOARD ──
 function renderDashboard(){
   if(S.loading&&S.dashClients.length===0)return'<div class="loading">Loading dashboard…</div>';
   const s=S.summary;
+  const cats=[...new Set(S.engTypes.map(t=>t.category))];
   const clients=S.dashClients.filter(c=>{
     const ms=!S.search||c.name.toLowerCase().includes(S.search.toLowerCase())||(c.email&&c.email.toLowerCase().includes(S.search.toLowerCase()));
-    const mr=S.filterReturn==='all'||c.return_type===S.filterReturn;return ms&&mr;
+    const mt=S.filterType==='all'||c.engagement_type_code===S.filterType;
+    const mc=S.filterCat==='all'||c.engagement_category===S.filterCat;
+    return ms&&mt&&mc;
   });
-  return`
-  <p class="page-desc">Every active client at a glance — search, filter, and jump straight in.</p>
+  return`<p class="page-desc">Every active engagement at a glance — search, filter, and jump straight in.</p>
   <div class="summary-grid">
     <div class="summary-card sc-navy"><div class="label">Total Active</div><div class="value">${s.total_active}</div></div>
     <div class="summary-card sc-green"><div class="label">Ready to Prepare</div><div class="value">${s.ready_to_prepare}</div></div>
@@ -291,235 +268,200 @@ function renderDashboard(){
   </div>
   <div class="search-row">
     <input class="search-input" placeholder="Search clients by name or email…" value="${esc(S.search)}" data-action="search"/>
-    <select class="filter-select" data-action="filter-return"><option value="all" ${S.filterReturn==='all'?'selected':''}>All returns</option><option value="1040" ${S.filterReturn==='1040'?'selected':''}>1040</option><option value="1065" ${S.filterReturn==='1065'?'selected':''}>1065</option><option value="1120-S" ${S.filterReturn==='1120-S'?'selected':''}>1120-S</option></select>
+    <select class="filter-select" data-action="filter-cat"><option value="all" ${S.filterCat==='all'?'selected':''}>All categories</option>${cats.map(c=>`<option value="${c}" ${S.filterCat===c?'selected':''}>${c}</option>`).join('')}</select>
+    <select class="filter-select" data-action="filter-type"><option value="all" ${S.filterType==='all'?'selected':''}>All types</option>${S.engTypes.map(t=>`<option value="${t.code}" ${S.filterType===t.code?'selected':''}>${t.code} — ${t.name}</option>`).join('')}</select>
   </div>
   <div class="showing-text">Showing ${clients.length} of ${S.dashClients.length} engagements</div>
-  <div class="table-wrap"><table><thead><tr><th>Client ▲</th><th class="center">Return</th><th class="center">Year</th><th class="center">Status</th><th>Progress</th><th class="center">Needed</th><th class="center">Received</th><th></th></tr></thead>
+  <div class="table-wrap"><table><thead><tr><th>Client ▲</th><th class="center">Type</th><th class="center">Category</th><th class="center">Year</th><th class="center">Status</th><th>Progress</th><th class="center">Needed</th><th></th></tr></thead>
   <tbody>${clients.map(c=>{
     const pct=c.progress_pct||0;const ready=c.needed_count===0&&c.total_applicable>0;
     return`<tr data-eng-id="${c.engagement_id}" data-client-id="${c.client_id}" data-action="open-engagement">
-      <td class="client-name">${esc(c.name)}</td><td class="center">${c.return_type}</td><td class="center">${c.tax_year}</td>
+      <td class="client-name">${esc(c.name)}</td>
+      <td class="center"><span class="badge badge-blue">${c.engagement_type_code}</span></td>
+      <td class="center"><span class="cat-badge ${catClass(c.engagement_category)}">${c.engagement_category}</span></td>
+      <td class="center">${c.tax_year}</td>
       <td class="center"><span class="badge ${ready?'badge-green':'badge-amber'}">${ready?'Ready':'Waiting'}</span></td>
       <td><div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div><span class="progress-text">${c.received_count}/${c.total_applicable}</span></div></td>
       <td class="center"><span class="needed-count ${c.needed_count>0?'has':'none'}">${c.needed_count}</span></td>
-      <td class="center">${c.received_count}</td><td style="text-align:right;color:rgba(27,42,74,0.3)">→</td></tr>`;
+      <td style="text-align:right;color:rgba(27,42,74,0.3)">→</td></tr>`;
   }).join('')}</tbody></table></div>`;
 }
 
-// ── CLIENT VIEW ──
 function renderClientView(){
   if(S.allClients.length===0)return'<div class="loading">Loading…</div>';
   const client=S.allClients.find(c=>c.id===S.selectedClientId);
   if(!client)return'<div class="loading">Select a client…</div>';
   const phone=client.mobile_phone||client.work_phone||client.home_phone||'—';
-  const engs=S.clientEngagements;
-  const e=S.engDetail;
+  const engs=S.clientEngagements;const e=S.engDetail;
   const neededCount=S.engSections.reduce((sum,s)=>sum+s.checklist_items.filter(i=>i.doc_status==='Needed').length,0);
-
-  return`
-  <p class="page-desc">Pick a client, update their checklist, and chase what's still needed.</p>
-  <div class="client-layout">
-    <div class="client-sidebar">
-      <div class="client-info-card">
-        <div class="info-label">Select Client</div>
-        <select class="client-select" data-action="select-client">${S.allClients.map(c=>`<option value="${c.id}" ${c.id===S.selectedClientId?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
-        <div style="margin-top:12px">
-          <div class="info-row"><span class="info-key">Email</span><span class="info-val">${esc(client.email||'—')}</span></div>
-          <div class="info-row"><span class="info-key">Phone</span><span class="info-val">${esc(phone)}</span></div>
-          <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="badge ${client.status==='Active'?'badge-green':'badge-red'}">${client.status}</span></span></div>
-        </div>
-        <div style="margin-top:14px">
-          <div class="info-label">Engagements</div>
-          ${engs.length===0?'<div style="font-size:12px;color:#9CA3AF">No engagements yet</div>':''}
-          <div class="eng-badges">${engs.map(en=>`<span class="eng-badge ${en.id===S.selectedEngId?'active':''}" data-eng-id="${en.id}" data-action="switch-eng">${en.return_type} ${en.tax_year}</span>`).join('')}</div>
-          <button class="btn btn-sm" style="margin-top:8px;width:100%" data-action="show-add-engagement">+ Add Engagement</button>
-        </div>
+  const engType=e?S.engTypes.find(t=>t.code===e.engagement_type_code):null;
+  return`<p class="page-desc">Pick a client, update their checklist, and chase what's still needed.</p>
+  <div class="client-layout"><div class="client-sidebar">
+    <div class="client-info-card">
+      <div class="info-label">Select Client</div>
+      <select class="client-select" data-action="select-client">${S.allClients.map(c=>`<option value="${c.id}" ${c.id===S.selectedClientId?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+      <div style="margin-top:12px">
+        <div class="info-row"><span class="info-key">Email</span><span class="info-val">${esc(client.email||'—')}</span></div>
+        <div class="info-row"><span class="info-key">Phone</span><span class="info-val">${esc(phone)}</span></div>
+        <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="badge ${client.status==='Active'?'badge-green':'badge-red'}">${client.status}</span></span></div>
       </div>
-      ${e?`<div class="actions-card">
-        <button class="btn">Preview reminder</button>
-        <button class="btn btn-gold">Draft / Send reminder</button>
-        <button class="btn">Reset reminder cycle</button>
-        <button class="btn btn-red">Archive client</button>
-      </div>`:''}
+      <div style="margin-top:14px"><div class="info-label">Engagements</div>
+        ${engs.length===0?'<div style="font-size:12px;color:#9CA3AF;margin-top:4px">No engagements yet</div>':''}
+        <div class="eng-badges">${engs.map(en=>`<span class="eng-badge ${en.id===S.selectedEngId?'active':''}" data-eng-id="${en.id}" data-action="switch-eng">${en.engagement_type_code} ${en.tax_year}</span>`).join('')}</div>
+        <button class="btn btn-sm" style="margin-top:8px;width:100%" data-action="show-add-engagement">+ Add Engagement</button>
+      </div>
     </div>
-    <div style="flex:1;min-width:0">
-      ${!e?'<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Select or add an engagement to see the document checklist.</div></div>':`
-        ${neededCount>0?`<div class="needed-banner">${neededCount} items still needed.</div>`:''}
-        ${S.engSections.map(sec=>`<div class="section-card"><div class="section-header">${esc(sec.name)}</div>${sec.checklist_items.map(item=>`<div class="doc-row"><div class="doc-info"><div class="doc-name">${esc(item.name)}</div><div class="doc-via">${item.send_via}</div></div><div class="doc-btns">${['Received','Needed','N/A'].map(st=>`<button class="doc-btn ${item.doc_status===st?(st==='Received'?'a-recv':st==='Needed'?'a-need':'a-na'):''}" data-doc-id="${item.doc_id||''}" data-item-id="${item.id}" data-status="${st}" data-action="update-doc">${st}</button>`).join('')}</div></div>`).join('')}</div>`).join('')}
-      `}
-    </div>
-  </div>`;
+    ${e?`<div class="actions-card">
+      ${engType?`<div style="text-align:center;margin-bottom:4px"><span class="cat-badge ${catClass(engType.category)}">${engType.category}</span> <span style="font-size:12px;font-weight:600;color:#1B2A4A">${engType.name}</span></div>`:''}
+      <button class="btn">Preview reminder</button><button class="btn btn-gold">Draft / Send reminder</button><button class="btn">Reset reminder cycle</button><button class="btn btn-red">Archive client</button></div>`:''}
+  </div>
+  <div style="flex:1;min-width:0">${!e?'<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Select or add an engagement to see the checklist.</div></div>':`
+    ${neededCount>0?`<div class="needed-banner">${neededCount} items still needed.</div>`:''}
+    ${S.engSections.length===0?'<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No checklist set up for this engagement type yet.<br>Go to Settings → Checklist Master to add one.</div></div>':''}
+    ${S.engSections.map(sec=>`<div class="section-card"><div class="section-header">${esc(sec.name)}</div>${sec.checklist_items.map(item=>`<div class="doc-row"><div class="doc-info"><div class="doc-name">${esc(item.name)}</div><div class="doc-via">${item.send_via}</div></div><div class="doc-btns">${['Received','Needed','N/A'].map(st=>`<button class="doc-btn ${item.doc_status===st?(st==='Received'?'a-recv':st==='Needed'?'a-need':'a-na'):''}" data-doc-id="${item.doc_id||''}" data-item-id="${item.id}" data-status="${st}" data-action="update-doc">${st}</button>`).join('')}</div></div>`).join('')}</div>`).join('')}`}
+  </div></div>`;
 }
 
-// ── CALL LIST ──
 function renderCallList(){
   if(S.loading&&S.callList.length===0)return'<div class="loading">Loading…</div>';
-  if(S.callList.length===0)return`<p class="page-desc">Clients who hit the escalation threshold with documents still missing.</p><div class="empty-state"><div class="empty-icon">✓</div><div class="empty-text">No clients on the call list right now.</div></div>`;
-  return`<p class="page-desc">Clients who hit the escalation threshold — call them directly.</p>${S.callList.map(c=>{
+  if(S.callList.length===0)return`<p class="page-desc">Clients who hit the escalation threshold.</p><div class="empty-state"><div class="empty-icon">✓</div><div class="empty-text">No clients on the call list.</div></div>`;
+  return`<p class="page-desc">Call these clients directly — automated emails have stopped.</p>${S.callList.map(c=>{
     const phone=c.mobile_phone||c.work_phone||c.home_phone;
-    return`<div class="call-card"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div><div class="call-name" data-eng-id="${c.engagement_id}" data-client-id="${c.client_id}" data-action="open-engagement">${esc(c.name)}</div><div style="font-size:13px;color:#6B7280">${c.return_type} ${c.tax_year} · ${esc(c.email||'')}</div></div>${c.escalated_at?`<span style="font-size:11px;color:#EF4444">Escalated ${new Date(c.escalated_at).toLocaleDateString()}</span>`:''}</div><div style="font-size:15px;font-weight:600;margin:8px 0;${phone?'color:#1B2A4A':'color:#EF4444'}">✆ ${phone?esc(phone):'No phone on file'}</div><div style="font-size:13px;color:#6B7280;margin-bottom:14px">▸ ${c.missing_count} documents still missing</div><div style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="field-label">Call Notes</div><input class="text-input" placeholder="Left voicemail…" value="${esc(c.call_notes||'')}" data-eng-id="${c.engagement_id}" data-action="save-call-notes"/></div><button class="btn btn-navy" data-eng-id="${c.engagement_id}" data-action="mark-called">Mark called</button><button class="btn" data-eng-id="${c.engagement_id}" data-action="remove-escalation">Remove</button></div></div>`;
+    return`<div class="call-card"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><div><div class="call-name" data-eng-id="${c.engagement_id}" data-client-id="${c.client_id}" data-action="open-engagement">${esc(c.name)}</div><div style="font-size:13px;color:#6B7280">${c.engagement_type_code} ${c.tax_year} · ${esc(c.email||'')}</div></div>${c.escalated_at?`<span style="font-size:11px;color:#EF4444">Escalated ${new Date(c.escalated_at).toLocaleDateString()}</span>`:''}</div><div style="font-size:15px;font-weight:600;margin:8px 0;${phone?'color:#1B2A4A':'color:#EF4444'}">✆ ${phone?esc(phone):'No phone on file'}</div><div style="font-size:13px;color:#6B7280;margin-bottom:14px">▸ ${c.missing_count} documents still missing</div><div style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="field-label">Call Notes</div><input class="text-input" placeholder="Left voicemail…" value="${esc(c.call_notes||'')}" data-eng-id="${c.engagement_id}" data-action="save-call-notes"/></div><button class="btn btn-navy" data-eng-id="${c.engagement_id}" data-action="mark-called">Mark called</button><button class="btn" data-eng-id="${c.engagement_id}" data-action="remove-escalation">Remove</button></div></div>`;
   }).join('')}`;
 }
 
-// ── AUTOMATION ──
 function renderAutomation(){
-  if(!S.settings)return'<div class="loading">Loading…</div>';
-  const s=S.settings;const rc=S.rosterData.filter(c=>c.on_reminder_roster).length;
-  return`<p class="page-desc">The Day 1 / 3 / 10 reminder engine. Runs once a day (~9 AM ET).</p>
-  <div class="info-box"><h3>How the daily automation works</h3><ol><li><b>Connect your mailbox</b> in Settings → Email connection.</li><li><b>Set up each client's documents</b> in Client View.</li><li><b>Pick who's included</b> in the Reminder roster below.</li><li><b>Choose Send mode</b> — Draft or Auto-send.</li><li><b>Turn on Daily automation.</b></li></ol></div>
-  <div class="toggle-grid"><div class="toggle-card"><h4>Send mode</h4><p>Draft mode: reminders saved as drafts.</p><div style="display:flex;align-items:center;gap:10px"><button class="toggle ${s.send_mode==='auto'?'on':''}" data-action="toggle-send-mode"><div class="toggle-knob"></div></button><span style="font-size:13px;color:#4B5563">${s.send_mode==='draft'?'Draft mode':'Auto-send'}</span></div></div><div class="toggle-card"><h4>Daily automation</h4><p>Runs each day at ~9 AM ET.</p><div style="display:flex;align-items:center;gap:10px"><button class="toggle ${s.daily_automation?'on':''}" data-action="toggle-daily"><div class="toggle-knob"></div></button><span style="font-size:13px;color:#4B5563">${s.daily_automation?'Active':'Paused'}</span></div></div></div>
-  <div class="card" style="padding:20px;margin-bottom:20px"><h4 style="font-weight:600;color:#1B2A4A;margin-bottom:14px;font-size:14px">Reminder schedule</h4><div class="schedule-grid"><div class="schedule-card gold"><div class="schedule-label">Reminder #1 (Gentle Nudge)</div><div style="display:flex;align-items:center;gap:8px"><input class="schedule-input" type="number" value="${s.reminder_1_days}" data-field="reminder_1_days" data-action="update-schedule"/><span style="font-size:13px;color:#6B7280">days after start</span></div></div><div class="schedule-card navy"><div class="schedule-label">Reminder #2 (Deadline)</div><div style="display:flex;align-items:center;gap:8px"><input class="schedule-input" type="number" value="${s.reminder_2_days}" data-field="reminder_2_days" data-action="update-schedule"/><span style="font-size:13px;color:#6B7280">days after start</span></div></div><div class="schedule-card red"><div class="schedule-label">Escalate / Call List</div><div style="display:flex;align-items:center;gap:8px"><input class="schedule-input" type="number" value="${s.escalation_days}" data-field="escalation_days" data-action="update-schedule"/><span style="font-size:13px;color:#6B7280">days after start</span></div></div></div></div>
-  <div class="card" style="overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid #F3F4F6;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;color:#1B2A4A;font-size:14px">Reminder roster</div><div style="font-size:12px;color:#6B7280;margin-top:2px">${rc} of ${S.rosterData.length} active engagements receiving reminders.</div></div><div style="display:flex;gap:8px"><button class="btn btn-sm" data-action="roster-all">Select all</button><button class="btn btn-sm" data-action="roster-clear">Clear all</button></div></div>
-  <table style="width:100%;border-collapse:collapse"><thead><tr><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:left">On</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:left">Client</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:center">Return</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:center">Missing</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:left">Email</th></tr></thead>
-  <tbody>${S.rosterData.map(c=>`<tr style="border-bottom:1px solid #F9FAFB"><td style="padding:8px 20px"><input type="checkbox" ${c.on_reminder_roster?'checked':''} data-eng-id="${c.engagement_id}" data-action="toggle-roster"/></td><td style="padding:8px 20px;font-weight:500;color:#1B2A4A">${esc(c.name)}</td><td style="padding:8px 20px;text-align:center">${c.return_type}</td><td style="padding:8px 20px;text-align:center"><span class="badge ${c.needed_count>10?'badge-red':'badge-amber'}">${c.needed_count}</span></td><td style="padding:8px 20px;color:#6B7280;font-size:12px">${esc(c.email||'')}</td></tr>`).join('')}</tbody></table></div>`;
+  if(!S.settings)return'<div class="loading">Loading…</div>';const s=S.settings;const rc=S.rosterData.filter(c=>c.on_reminder_roster).length;
+  return`<p class="page-desc">The Day 1 / 3 / 10 reminder engine.</p>
+  <div class="info-box"><h3>How the daily automation works</h3><ol><li><b>Connect your mailbox</b> in Settings → Email.</li><li><b>Set up each client's documents</b> in Client View.</li><li><b>Pick who's included</b> in the Reminder roster.</li><li><b>Choose Send mode</b> — Draft or Auto-send.</li><li><b>Turn on Daily automation.</b></li></ol></div>
+  <div class="toggle-grid"><div class="toggle-card"><h4>Send mode</h4><p>Draft: reminders saved as drafts.</p><div style="display:flex;align-items:center;gap:10px"><button class="toggle ${s.send_mode==='auto'?'on':''}" data-action="toggle-send-mode"><div class="toggle-knob"></div></button><span style="font-size:13px;color:#4B5563">${s.send_mode==='draft'?'Draft':'Auto-send'}</span></div></div><div class="toggle-card"><h4>Daily automation</h4><p>Runs ~9 AM ET.</p><div style="display:flex;align-items:center;gap:10px"><button class="toggle ${s.daily_automation?'on':''}" data-action="toggle-daily"><div class="toggle-knob"></div></button><span style="font-size:13px;color:#4B5563">${s.daily_automation?'Active':'Paused'}</span></div></div></div>
+  <div class="card" style="padding:20px;margin-bottom:20px"><h4 style="font-weight:600;color:#1B2A4A;margin-bottom:14px;font-size:14px">Reminder schedule</h4><div class="schedule-grid"><div class="schedule-card gold"><div class="schedule-label">Reminder #1</div><div style="display:flex;align-items:center;gap:8px"><input class="schedule-input" type="number" value="${s.reminder_1_days}" data-field="reminder_1_days" data-action="update-schedule"/><span style="font-size:13px;color:#6B7280">days</span></div></div><div class="schedule-card navy"><div class="schedule-label">Reminder #2</div><div style="display:flex;align-items:center;gap:8px"><input class="schedule-input" type="number" value="${s.reminder_2_days}" data-field="reminder_2_days" data-action="update-schedule"/><span style="font-size:13px;color:#6B7280">days</span></div></div><div class="schedule-card red"><div class="schedule-label">Escalate</div><div style="display:flex;align-items:center;gap:8px"><input class="schedule-input" type="number" value="${s.escalation_days}" data-field="escalation_days" data-action="update-schedule"/><span style="font-size:13px;color:#6B7280">days</span></div></div></div></div>
+  <div class="card" style="overflow:hidden"><div style="padding:16px 20px;border-bottom:1px solid #F3F4F6;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:600;color:#1B2A4A;font-size:14px">Reminder roster</div><div style="font-size:12px;color:#6B7280;margin-top:2px">${rc} of ${S.rosterData.length} receiving reminders.</div></div><div style="display:flex;gap:8px"><button class="btn btn-sm" data-action="roster-all">Select all</button><button class="btn btn-sm" data-action="roster-clear">Clear all</button></div></div>
+  <table style="width:100%;border-collapse:collapse"><thead><tr><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:left">On</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:left">Client</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:center">Type</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:center">Missing</th><th style="padding:8px 20px;font-size:11px;font-weight:500;color:#6B7280;background:#F9FAFB;text-align:left">Email</th></tr></thead>
+  <tbody>${S.rosterData.map(c=>`<tr style="border-bottom:1px solid #F9FAFB"><td style="padding:8px 20px"><input type="checkbox" ${c.on_reminder_roster?'checked':''} data-eng-id="${c.engagement_id}" data-action="toggle-roster"/></td><td style="padding:8px 20px;font-weight:500;color:#1B2A4A">${esc(c.name)}</td><td style="padding:8px 20px;text-align:center"><span class="badge badge-blue">${c.engagement_type_code}</span></td><td style="padding:8px 20px;text-align:center"><span class="badge ${c.needed_count>10?'badge-red':'badge-amber'}">${c.needed_count}</span></td><td style="padding:8px 20px;color:#6B7280;font-size:12px">${esc(c.email||'')}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
-// ── TEMPLATES ──
 function renderTemplates(){
-  const tabs=[{type:'all_received',label:'All docs received'},{type:'escalation',label:'Escalation alert'},{type:'reminder_1',label:'Reminder #1'},{type:'reminder_2',label:'Reminder #2'}];
+  const tabs=[{type:'all_received',label:'All docs received'},{type:'escalation',label:'Escalation'},{type:'reminder_1',label:'Reminder #1'},{type:'reminder_2',label:'Reminder #2'}];
   const a=S.templates.find(t=>t.template_type===S.activeTemplate);
   if(!a)return'<div class="loading">Loading…</div>';
-  const ps=(a.subject_line||'').replace('{{returnType}}','1040').replace('{{clientName}}','Sample Client');
+  const ps=(a.subject_line||'').replace('{{returnType}}','1040');
   const pb=(a.message_body||'').replace(/\{\{clientName\}\}/g,'Sample Client, LLC').replace(/\{\{returnType\}\}/g,'1040').replace(/\{\{missingDocs\}\}/g,'• Prior year tax return\n• W-2 wages').replace(/\{\{missingCount\}\}/g,'3');
-  return`<p class="page-desc">Type the wording in plain text — the system formats it into the branded H4 email.</p>
+  return`<p class="page-desc">Edit the wording — the system formats it into branded H4 email.</p>
   <div class="tabs">${tabs.map(t=>`<button class="tab-btn ${S.activeTemplate===t.type?'active':''}" data-type="${t.type}" data-action="switch-template">${t.label}</button>`).join('')}</div>
   <div class="template-grid"><div class="template-editor">
     <div><div class="field-label">Template Name</div><input class="text-input" value="${esc(a.template_name)}" data-field="template_name" data-action="update-template"/></div>
     <div><div class="field-label">Subject Line</div><input class="text-input" value="${esc(a.subject_line)}" data-field="subject_line" data-action="update-template"/></div>
     <div><div class="field-label">Header Title</div><input class="text-input" value="${esc(a.header_title||'')}" data-field="header_title" data-action="update-template"/></div>
     <div><div class="field-label">Message</div><textarea class="textarea" data-field="message_body" data-action="update-template">${esc(a.message_body)}</textarea></div>
-  </div><div class="preview-card"><div class="preview-subject"><div style="font-size:10px;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px">Subject Preview</div><div style="font-size:13px;font-weight:500;color:#1B2A4A;margin-top:2px">${esc(ps)}</div></div><div style="padding:24px"><div class="preview-banner"><h3>H4 Accounting LLC</h3><p>${esc(a.header_title||'')}</p></div><div style="font-size:13px;color:#374151;white-space:pre-line;line-height:1.7">${esc(pb)}</div><div style="background:#F5EDD6;border-radius:8px;padding:14px;margin-top:20px"><h4 style="font-size:13px;font-weight:600;color:#1B2A4A">Payment Instructions</h4><p style="font-size:12px;color:#4B5563;margin-top:4px">Preferred payment: Zelle ID <b>hari_rad@live.com</b></p></div><div style="margin-top:20px;font-size:11px;color:#6B7280;line-height:1.6"><strong style="color:#1B2A4A">Hariharan Subrahmanyan, CPA</strong><br>H4 Accounting LLC · VA CPA License #50482<br>hari_rad@live.com · 540-454-7216</div></div></div></div>`;
+  </div><div class="preview-card"><div class="preview-subject"><div style="font-size:10px;color:#9CA3AF;text-transform:uppercase">Subject Preview</div><div style="font-size:13px;font-weight:500;color:#1B2A4A;margin-top:2px">${esc(ps)}</div></div><div style="padding:24px"><div class="preview-banner"><h3>H4 Accounting LLC</h3><p>${esc(a.header_title||'')}</p></div><div style="font-size:13px;color:#374151;white-space:pre-line;line-height:1.7">${esc(pb)}</div><div style="background:#F5EDD6;border-radius:8px;padding:14px;margin-top:20px"><h4 style="font-size:13px;font-weight:600;color:#1B2A4A">Payment Instructions</h4><p style="font-size:12px;color:#4B5563;margin-top:4px">Zelle: <b>hari_rad@live.com</b></p></div><div style="margin-top:20px;font-size:11px;color:#6B7280;line-height:1.6"><strong style="color:#1B2A4A">Hariharan Subrahmanyan, CPA</strong><br>H4 Accounting LLC · VA CPA License #50482<br>hari_rad@live.com · 540-454-7216</div></div></div></div>`;
 }
 
-// ── QUESTIONNAIRES ──
 function renderQuestionnaires(){
-  const f=S.questionnaires.filter(q=>q.return_type===S.activeReturn);
+  const typeCodes=S.engTypes.filter(t=>t.category==='Tax').map(t=>t.code);
+  const f=S.questionnaires.filter(q=>q.engagement_type_code===S.activeTypeCode);
   return`<p class="page-desc">Life-changes questions to send first.</p>
-  <div class="tabs">${['1040','1065','1120-S'].map(rt=>`<button class="tab-btn ${S.activeReturn===rt?'active':''}" data-type="${rt}" data-action="switch-return">Form ${rt}</button>`).join('')}</div>
-  <div class="card" style="overflow:hidden">${f.map((q,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #F9FAFB"><span style="color:rgba(27,42,74,0.35);font-size:13px;font-weight:500;min-width:24px">${i+1}.</span><input class="text-input" value="${esc(q.question)}" data-id="${q.id}" data-action="update-question" style="flex:1"/><button style="background:none;border:none;color:#D1D5DB;font-size:18px;cursor:pointer;padding:4px 8px" data-id="${q.id}" data-action="delete-question">×</button></div>`).join('')}
-  <div style="padding:16px 20px;display:flex;gap:12px"><button class="btn" data-action="add-question">+ Add question</button><button class="btn btn-navy" data-action="save-questionnaire">Save</button></div></div>`;
+  <div class="tabs">${typeCodes.map(tc=>`<button class="tab-btn ${S.activeTypeCode===tc?'active':''}" data-type="${tc}" data-action="switch-qtype">${tc}</button>`).join('')}</div>
+  <div class="card" style="overflow:hidden">${f.length===0?'<div style="padding:20px;text-align:center;color:#9CA3AF;font-size:13px">No questions for this type yet. Add one below.</div>':''}${f.map((q,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #F9FAFB"><span style="color:rgba(27,42,74,0.35);font-size:13px;font-weight:500;min-width:24px">${i+1}.</span><input class="text-input" value="${esc(q.question)}" data-id="${q.id}" data-action="update-question" style="flex:1"/><button style="background:none;border:none;color:#D1D5DB;font-size:18px;cursor:pointer" data-id="${q.id}" data-action="delete-question">×</button></div>`).join('')}
+  <div style="padding:16px 20px;display:flex;gap:12px"><button class="btn" data-action="add-question">+ Add question</button></div></div>`;
 }
 
-// ── SETTINGS ──
 function renderSettings(){
-  if(!S.settings)return'<div class="loading">Loading…</div>';
-  const s=S.settings;const t=S.settingsTab;
-  const tabs=[{id:'firm',label:'Firm & Email'},{id:'checklist',label:'Checklist Master'},{id:'attachments',label:'Attachments'},{id:'data',label:'Data'}];
+  if(!S.settings)return'<div class="loading">Loading…</div>';const s=S.settings;const t=S.settingsTab;
+  const tabs=[{id:'firm',label:'Firm & Email'},{id:'types',label:'Engagement Types'},{id:'checklist',label:'Checklist Master'},{id:'attachments',label:'Attachments'},{id:'data',label:'Data'}];
   let tc='';
   if(t==='firm'){const fields=[{l:'Firm Name',f:'firm_name'},{l:'Owner / CPA Name',f:'owner_name'},{l:'License Info',f:'license_info'},{l:'Email',f:'email'},{l:'Phone',f:'phone'},{l:'Zelle ID',f:'zelle_id'},{l:'Connected Email',f:'connected_email'}];tc=`<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(27,42,74,0.08);max-width:520px">${fields.map(f=>`<div style="margin-bottom:14px"><div class="field-label">${f.l}</div><input class="text-input" value="${esc(s[f.f]||'')}" data-field="${f.f}" data-action="update-setting"/></div>`).join('')}</div>`}
+  else if(t==='types'){tc=renderEngTypes()}
   else if(t==='checklist'){tc=renderChecklistMaster()}
-  else if(t==='attachments'){tc=`<div class="card" style="padding:24px"><h3 style="font-weight:600;color:#1B2A4A;margin-bottom:8px">Reminder attachments</h3><p style="font-size:13px;color:#6B7280;margin-bottom:14px">Upload files to attach to reminder emails.</p><button class="btn btn-navy">+ Upload files</button><span style="margin-left:12px;font-size:13px;color:#9CA3AF">0 attachments</span></div>`}
+  else if(t==='attachments'){tc=`<div class="card" style="padding:24px"><h3 style="font-weight:600;color:#1B2A4A;margin-bottom:8px">Reminder attachments</h3><p style="font-size:13px;color:#6B7280;margin-bottom:14px">Upload files to attach to reminder emails.</p><button class="btn btn-navy">+ Upload files</button></div>`}
   else{tc=`<div class="card" style="padding:24px"><h3 style="font-weight:600;color:#1B2A4A;margin-bottom:14px">Data Management</h3><button class="btn">Download CSV</button><button class="btn" style="margin-left:12px">Upload CSV</button></div>`}
-  return`<p class="page-desc">Firm details, email connection, and the master checklists.</p><div class="tabs">${tabs.map(tb=>`<button class="tab-btn ${t===tb.id?'active':''}" data-type="${tb.id}" data-action="switch-settings-tab">${tb.label}</button>`).join('')}</div>${tc}`;
-}
-function renderChecklistMaster(){
-  const rt=S.checklistReturn;const secs=S.checklistSections.filter(s=>s.return_type===rt);
-  return`<div class="tabs" style="margin-bottom:14px">${['1040','1065','1120-S'].map(r=>`<button class="tab-btn ${rt===r?'active':''}" data-type="${r}" data-action="switch-checklist-return">Form ${r}</button>`).join('')}</div>${secs.map(sec=>`<div class="section-card"><div class="section-header">${esc(sec.name)}</div>${(sec.checklist_items||[]).sort((a,b)=>a.sort_order-b.sort_order).map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid #F9FAFB;font-size:13px;color:#374151"><span>${esc(item.name)}</span><span style="font-size:10px;color:#9CA3AF;background:#F3F4F6;padding:2px 8px;border-radius:4px">${item.send_via}</span></div>`).join('')}</div>`).join('')}`;
+  return`<p class="page-desc">Firm details, engagement types, and master checklists.</p><div class="tabs">${tabs.map(tb=>`<button class="tab-btn ${t===tb.id?'active':''}" data-type="${tb.id}" data-action="switch-settings-tab">${tb.label}</button>`).join('')}</div>${tc}`;
 }
 
-// ── MODALS ──
+function renderEngTypes(){
+  const cats=[...new Set(S.engTypes.map(t=>t.category))];
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><p style="font-size:13px;color:#6B7280">Manage the types of engagements you offer. Each type can have its own checklist.</p><button class="btn btn-navy btn-sm" data-action="show-add-type">+ Add Type</button></div>
+  ${cats.map(cat=>`<div class="section-card"><div class="section-header">${cat}</div>${S.engTypes.filter(t=>t.category===cat).map(t=>`<div class="type-row"><div><span style="font-weight:600;color:#1B2A4A">${esc(t.code)}</span><span style="margin-left:8px;color:#6B7280">${esc(t.name)}</span></div><div style="display:flex;align-items:center;gap:8px"><span class="cat-badge ${catClass(t.category)}">${t.category}</span><button class="btn btn-sm" style="padding:4px 8px;font-size:11px;color:${t.is_active?'#22C55E':'#9CA3AF'}" data-type-id="${t.id}" data-active="${t.is_active}" data-action="toggle-type">${t.is_active?'Active':'Inactive'}</button></div></div>`).join('')}</div>`).join('')}`;
+}
+
+function renderChecklistMaster(){
+  const typeCodes=S.engTypes.map(t=>t.code);const secs=S.checklistSections.filter(s=>s.engagement_type_code===S.checklistTypeCode);
+  return`<div class="tabs" style="margin-bottom:14px">${typeCodes.map(r=>`<button class="tab-btn ${S.checklistTypeCode===r?'active':''}" data-type="${r}" data-action="switch-checklist-type">${r}</button>`).join('')}</div>
+  ${secs.length===0?'<div class="card" style="padding:24px;text-align:center;color:#9CA3AF">No checklist configured for this type yet.</div>':''}
+  ${secs.map(sec=>`<div class="section-card"><div class="section-header">${esc(sec.name)}</div>${(sec.checklist_items||[]).sort((a,b)=>a.sort_order-b.sort_order).map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid #F9FAFB;font-size:13px;color:#374151"><span>${esc(item.name)}</span><span style="font-size:10px;color:#9CA3AF;background:#F3F4F6;padding:2px 8px;border-radius:4px">${item.send_via}</span></div>`).join('')}</div>`).join('')}`;
+}
+
 function renderModal(){
   if(S.modal==='add-client')return`<div class="modal-overlay" data-action="close-modal"><div class="modal" onclick="event.stopPropagation()"><h2>Add New Client</h2>
     <div class="modal-field"><label>Client Name *</label><input id="m-name" class="text-input" placeholder="Last, First or Company Name"/></div>
     <div class="modal-field"><label>Email</label><input id="m-email" class="text-input" placeholder="email@example.com"/></div>
-    <div class="modal-row"><div class="modal-field"><label>Mobile Phone</label><input id="m-mobile" class="text-input" placeholder="5551234567"/></div><div class="modal-field"><label>Work Phone</label><input id="m-work" class="text-input"/></div></div>
+    <div class="modal-row"><div class="modal-field"><label>Mobile Phone</label><input id="m-mobile" class="text-input"/></div><div class="modal-field"><label>Work Phone</label><input id="m-work" class="text-input"/></div></div>
     <div class="modal-field"><label>Home Phone</label><input id="m-home" class="text-input"/></div>
     <div class="modal-actions"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-navy" data-action="save-new-client">Add Client</button></div></div></div>`;
-
-  if(S.modal==='edit-client'){
-    const c=S.allClients.find(cl=>cl.id===S.selectedClientId);
-    if(!c)return'';
+  if(S.modal==='edit-client'){const c=S.allClients.find(cl=>cl.id===S.selectedClientId);if(!c)return'';
     return`<div class="modal-overlay" data-action="close-modal"><div class="modal" onclick="event.stopPropagation()"><h2>Edit Client</h2>
     <div class="modal-field"><label>Client Name *</label><input id="m-name" class="text-input" value="${esc(c.name)}"/></div>
     <div class="modal-field"><label>Email</label><input id="m-email" class="text-input" value="${esc(c.email||'')}"/></div>
     <div class="modal-row"><div class="modal-field"><label>Mobile Phone</label><input id="m-mobile" class="text-input" value="${esc(c.mobile_phone||'')}"/></div><div class="modal-field"><label>Work Phone</label><input id="m-work" class="text-input" value="${esc(c.work_phone||'')}"/></div></div>
     <div class="modal-field"><label>Home Phone</label><input id="m-home" class="text-input" value="${esc(c.home_phone||'')}"/></div>
     <div class="modal-field"><label>Status</label><select id="m-status" class="text-input"><option value="Active" ${c.status==='Active'?'selected':''}>Active</option><option value="Inactive" ${c.status==='Inactive'?'selected':''}>Inactive</option></select></div>
-    <div class="modal-actions"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-navy" data-action="save-edit-client">Save Changes</button></div></div></div>`;
-  }
-
+    <div class="modal-actions"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-navy" data-action="save-edit-client">Save Changes</button></div></div></div>`}
   if(S.modal==='add-engagement'){
+    const grouped={};S.engTypes.forEach(t=>{if(!grouped[t.category])grouped[t.category]=[];grouped[t.category].push(t)});
     return`<div class="modal-overlay" data-action="close-modal"><div class="modal" onclick="event.stopPropagation()"><h2>Add Engagement</h2>
-    <p style="font-size:13px;color:#6B7280;margin-bottom:16px">Add a new tax filing for this client. The document checklist will be auto-generated.</p>
-    <div class="modal-row"><div class="modal-field"><label>Return Type *</label><select id="m-return" class="text-input"><option value="1040">1040 — Individual</option><option value="1065">1065 — Partnership</option><option value="1120-S">1120-S — S Corporation</option></select></div>
-    <div class="modal-field"><label>Tax Year *</label><select id="m-year" class="text-input"><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option></select></div></div>
-    <div class="modal-actions"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-navy" data-action="save-new-engagement">Add Engagement</button></div></div></div>`;
-  }
+    <p style="font-size:13px;color:#6B7280;margin-bottom:16px">Add a new engagement. The document checklist will be auto-generated.</p>
+    <div class="modal-field"><label>Engagement Type *</label><select id="m-type" class="text-input">${Object.entries(grouped).map(([cat,types])=>`<optgroup label="${cat}">${types.map(t=>`<option value="${t.code}">${t.code} — ${t.name}</option>`).join('')}</optgroup>`).join('')}</select></div>
+    <div class="modal-field"><label>Tax Year *</label><select id="m-year" class="text-input"><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option></select></div>
+    <div class="modal-actions"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-navy" data-action="save-new-engagement">Add Engagement</button></div></div></div>`}
+  if(S.modal==='add-type'){
+    return`<div class="modal-overlay" data-action="close-modal"><div class="modal" onclick="event.stopPropagation()"><h2>Add Engagement Type</h2>
+    <div class="modal-field"><label>Code *</label><input id="m-tcode" class="text-input" placeholder="e.g. W2-PREP, AUDIT"/></div>
+    <div class="modal-field"><label>Name *</label><input id="m-tname" class="text-input" placeholder="e.g. W-2 Preparation"/></div>
+    <div class="modal-field"><label>Category *</label><select id="m-tcat" class="text-input"><option value="Tax">Tax</option><option value="Advisory">Advisory</option><option value="Formation">Formation</option></select></div>
+    <div class="modal-actions"><button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-navy" data-action="save-new-type">Add Type</button></div></div></div>`}
   return'';
 }
 
-// ── EVENTS ──
 function attachEvents(){
   document.querySelectorAll('[data-nav]').forEach(el=>{el.onclick=()=>navigate(el.dataset.nav)});
   document.querySelectorAll('[data-action="search"]').forEach(el=>{el.oninput=()=>set({search:el.value})});
-  document.querySelectorAll('[data-action="filter-return"]').forEach(el=>{el.onchange=()=>set({filterReturn:el.value})});
-
-  document.querySelectorAll('[data-action="open-engagement"]').forEach(el=>{
-    el.onclick=()=>{const eid=el.dataset.engId;const cid=el.dataset.clientId;S.selectedClientId=cid;S.selectedEngId=eid;S.page='client';loadAllClients().then(()=>loadClientEngagements(cid))}
-  });
-
-  document.querySelectorAll('[data-action="select-client"]').forEach(el=>{
-    el.onchange=()=>{S.selectedClientId=el.value;S.selectedEngId=null;loadClientEngagements(el.value)}
-  });
-
-  document.querySelectorAll('[data-action="switch-eng"]').forEach(el=>{
-    el.onclick=()=>{S.selectedEngId=el.dataset.engId;loadEngDetail(el.dataset.engId)}
-  });
-
-  document.querySelectorAll('[data-action="update-doc"]').forEach(el=>{
-    el.onclick=()=>updateDocStatus(el.dataset.docId||null,el.dataset.itemId,el.dataset.status)
-  });
-
-  // Modals
+  document.querySelectorAll('[data-action="filter-type"]').forEach(el=>{el.onchange=()=>set({filterType:el.value})});
+  document.querySelectorAll('[data-action="filter-cat"]').forEach(el=>{el.onchange=()=>set({filterCat:el.value})});
+  document.querySelectorAll('[data-action="open-engagement"]').forEach(el=>{el.onclick=()=>{S.selectedClientId=el.dataset.clientId||el.closest('tr')?.dataset.clientId;S.selectedEngId=el.dataset.engId||el.closest('tr')?.dataset.engId;S.page='client';loadAllClients().then(()=>loadClientEngagements(S.selectedClientId))}});
+  document.querySelectorAll('[data-action="select-client"]').forEach(el=>{el.onchange=()=>{S.selectedClientId=el.value;S.selectedEngId=null;loadClientEngagements(el.value)}});
+  document.querySelectorAll('[data-action="switch-eng"]').forEach(el=>{el.onclick=()=>{S.selectedEngId=el.dataset.engId;loadEngDetail(el.dataset.engId)}});
+  document.querySelectorAll('[data-action="update-doc"]').forEach(el=>{el.onclick=()=>updateDocStatus(el.dataset.docId||null,el.dataset.itemId,el.dataset.status)});
   document.querySelectorAll('[data-action="show-add-client"]').forEach(el=>{el.onclick=()=>set({modal:'add-client'})});
   document.querySelectorAll('[data-action="show-edit-client"]').forEach(el=>{el.onclick=()=>set({modal:'edit-client'})});
   document.querySelectorAll('[data-action="show-add-engagement"]').forEach(el=>{el.onclick=()=>set({modal:'add-engagement'})});
+  document.querySelectorAll('[data-action="show-add-type"]').forEach(el=>{el.onclick=()=>set({modal:'add-type'})});
   document.querySelectorAll('[data-action="close-modal"]').forEach(el=>{el.onclick=()=>set({modal:null})});
-
-  document.querySelectorAll('[data-action="save-new-client"]').forEach(el=>{
-    el.onclick=()=>{const n=document.getElementById('m-name').value.trim();if(!n){alert('Name is required');return}addClient(n,document.getElementById('m-email').value.trim(),document.getElementById('m-work').value.trim(),document.getElementById('m-home').value.trim(),document.getElementById('m-mobile').value.trim())}
-  });
-
-  document.querySelectorAll('[data-action="save-edit-client"]').forEach(el=>{
-    el.onclick=()=>{const n=document.getElementById('m-name').value.trim();if(!n){alert('Name is required');return}editClient(S.selectedClientId,{name:n,email:document.getElementById('m-email').value.trim()||null,work_phone:document.getElementById('m-work').value.trim()||null,home_phone:document.getElementById('m-home').value.trim()||null,mobile_phone:document.getElementById('m-mobile').value.trim()||null,status:document.getElementById('m-status').value})}
-  });
-
-  document.querySelectorAll('[data-action="save-new-engagement"]').forEach(el=>{
-    el.onclick=()=>addEngagement(S.selectedClientId,document.getElementById('m-return').value,document.getElementById('m-year').value)
-  });
-
-  // Templates
+  document.querySelectorAll('[data-action="save-new-client"]').forEach(el=>{el.onclick=()=>{const n=document.getElementById('m-name').value.trim();if(!n){alert('Name is required');return}addClient(n,document.getElementById('m-email').value.trim(),document.getElementById('m-work').value.trim(),document.getElementById('m-home').value.trim(),document.getElementById('m-mobile').value.trim())}});
+  document.querySelectorAll('[data-action="save-edit-client"]').forEach(el=>{el.onclick=()=>{const n=document.getElementById('m-name').value.trim();if(!n){alert('Name is required');return}editClient(S.selectedClientId,{name:n,email:document.getElementById('m-email').value.trim()||null,work_phone:document.getElementById('m-work').value.trim()||null,home_phone:document.getElementById('m-home').value.trim()||null,mobile_phone:document.getElementById('m-mobile').value.trim()||null,status:document.getElementById('m-status').value})}});
+  document.querySelectorAll('[data-action="save-new-engagement"]').forEach(el=>{el.onclick=()=>addEngagement(S.selectedClientId,document.getElementById('m-type').value,document.getElementById('m-year').value)});
+  document.querySelectorAll('[data-action="save-new-type"]').forEach(el=>{el.onclick=()=>{const c=document.getElementById('m-tcode').value.trim();const n=document.getElementById('m-tname').value.trim();if(!c||!n){alert('Code and Name are required');return}addEngType(c,n,document.getElementById('m-tcat').value)}});
+  document.querySelectorAll('[data-action="toggle-type"]').forEach(el=>{el.onclick=async()=>{const active=el.dataset.active==='true';await sb.from('engagement_types').update({is_active:!active}).eq('id',el.dataset.typeId);await loadEngTypes();render()}});
   document.querySelectorAll('[data-action="switch-template"]').forEach(el=>{el.onclick=()=>set({activeTemplate:el.dataset.type})});
   document.querySelectorAll('[data-action="update-template"]').forEach(el=>{el.onblur=async()=>{await sb.from('email_templates').update({[el.dataset.field]:el.value}).eq('template_type',S.activeTemplate);S.templates=S.templates.map(t=>t.template_type===S.activeTemplate?{...t,[el.dataset.field]:el.value}:t);render()}});
-
-  // Questionnaires
-  document.querySelectorAll('[data-action="switch-return"]').forEach(el=>{el.onclick=()=>set({activeReturn:el.dataset.type})});
+  document.querySelectorAll('[data-action="switch-qtype"]').forEach(el=>{el.onclick=()=>set({activeTypeCode:el.dataset.type})});
   document.querySelectorAll('[data-action="update-question"]').forEach(el=>{el.onblur=async()=>{await sb.from('questionnaires').update({question:el.value}).eq('id',el.dataset.id)}});
   document.querySelectorAll('[data-action="delete-question"]').forEach(el=>{el.onclick=async()=>{await sb.from('questionnaires').delete().eq('id',el.dataset.id);await loadQuestionnaires()}});
-  document.querySelectorAll('[data-action="add-question"]').forEach(el=>{el.onclick=async()=>{const f=S.questionnaires.filter(q=>q.return_type===S.activeReturn);const mx=Math.max(0,...f.map(q=>q.sort_order));await sb.from('questionnaires').insert({return_type:S.activeReturn,question:'New question?',sort_order:mx+1});await loadQuestionnaires()}});
-
-  // Settings
-  document.querySelectorAll('[data-action="switch-settings-tab"]').forEach(el=>{el.onclick=async()=>{S.settingsTab=el.dataset.type;if(el.dataset.type==='checklist'&&!S.checklistSections.length){const{data}=await sb.from('checklist_sections').select('*, checklist_items(*)').order('sort_order');S.checklistSections=data||[]}render()}});
-  document.querySelectorAll('[data-action="switch-checklist-return"]').forEach(el=>{el.onclick=()=>{S.checklistReturn=el.dataset.type;render()}});
+  document.querySelectorAll('[data-action="add-question"]').forEach(el=>{el.onclick=async()=>{const f=S.questionnaires.filter(q=>q.engagement_type_code===S.activeTypeCode);const mx=Math.max(0,...f.map(q=>q.sort_order));await sb.from('questionnaires').insert({engagement_type_code:S.activeTypeCode,question:'New question?',sort_order:mx+1});await loadQuestionnaires()}});
+  document.querySelectorAll('[data-action="switch-settings-tab"]').forEach(el=>{el.onclick=async()=>{S.settingsTab=el.dataset.type;if(el.dataset.type==='checklist'&&!S.checklistSections.length){const{data}=await sb.from('checklist_sections').select('*, checklist_items(*)').order('sort_order');S.checklistSections=data||[]}if(el.dataset.type==='types')await loadEngTypes();render()}});
+  document.querySelectorAll('[data-action="switch-checklist-type"]').forEach(el=>{el.onclick=()=>{S.checklistTypeCode=el.dataset.type;render()}});
   document.querySelectorAll('[data-action="update-setting"]').forEach(el=>{el.onblur=async()=>{S.settings[el.dataset.field]=el.value;await sb.from('firm_settings').update({[el.dataset.field]:el.value}).eq('id',S.settings.id)}});
-
-  // Automation
   document.querySelectorAll('[data-action="toggle-send-mode"]').forEach(el=>{el.onclick=async()=>{const v=S.settings.send_mode==='draft'?'auto':'draft';S.settings.send_mode=v;await sb.from('firm_settings').update({send_mode:v}).eq('id',S.settings.id);render()}});
   document.querySelectorAll('[data-action="toggle-daily"]').forEach(el=>{el.onclick=async()=>{const v=!S.settings.daily_automation;S.settings.daily_automation=v;await sb.from('firm_settings').update({daily_automation:v}).eq('id',S.settings.id);render()}});
   document.querySelectorAll('[data-action="update-schedule"]').forEach(el=>{el.onblur=async()=>{const v=parseInt(el.value)||0;S.settings[el.dataset.field]=v;await sb.from('firm_settings').update({[el.dataset.field]:v}).eq('id',S.settings.id)}});
-
-  // Roster
   document.querySelectorAll('[data-action="toggle-roster"]').forEach(el=>{el.onchange=async()=>{await sb.from('engagements').update({on_reminder_roster:el.checked}).eq('id',el.dataset.engId);S.rosterData=S.rosterData.map(c=>c.engagement_id===el.dataset.engId?{...c,on_reminder_roster:el.checked}:c);render()}});
-  document.querySelectorAll('[data-action="roster-all"]').forEach(el=>{el.onclick=async()=>{const ids=S.rosterData.map(c=>c.engagement_id);for(const id of ids)await sb.from('engagements').update({on_reminder_roster:true}).eq('id',id);S.rosterData=S.rosterData.map(c=>({...c,on_reminder_roster:true}));render()}});
-  document.querySelectorAll('[data-action="roster-clear"]').forEach(el=>{el.onclick=async()=>{const ids=S.rosterData.map(c=>c.engagement_id);for(const id of ids)await sb.from('engagements').update({on_reminder_roster:false}).eq('id',id);S.rosterData=S.rosterData.map(c=>({...c,on_reminder_roster:false}));render()}});
-
-  // Call list
+  document.querySelectorAll('[data-action="roster-all"]').forEach(el=>{el.onclick=async()=>{for(const c of S.rosterData)await sb.from('engagements').update({on_reminder_roster:true}).eq('id',c.engagement_id);S.rosterData=S.rosterData.map(c=>({...c,on_reminder_roster:true}));render()}});
+  document.querySelectorAll('[data-action="roster-clear"]').forEach(el=>{el.onclick=async()=>{for(const c of S.rosterData)await sb.from('engagements').update({on_reminder_roster:false}).eq('id',c.engagement_id);S.rosterData=S.rosterData.map(c=>({...c,on_reminder_roster:false}));render()}});
   document.querySelectorAll('[data-action="save-call-notes"]').forEach(el=>{el.onblur=async()=>{await sb.from('engagements').update({call_notes:el.value}).eq('id',el.dataset.engId)}});
   document.querySelectorAll('[data-action="mark-called"]').forEach(el=>{el.onclick=async()=>{await sb.from('call_log').insert({engagement_id:el.dataset.engId,notes:'Called'})}});
   document.querySelectorAll('[data-action="remove-escalation"]').forEach(el=>{el.onclick=async()=>{await sb.from('engagements').update({escalated:false,escalated_at:null}).eq('id',el.dataset.engId);await loadCallList()}});
 }
 
-// ── INIT ──
 (async function(){render();await loadDashboard()})();
 </script>
 </body>
