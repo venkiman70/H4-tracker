@@ -180,6 +180,37 @@ tbody td.center{text-align:center}
 .missing-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;color:#92400E}
 .rec-item{display:flex;align-items:start;gap:8px;padding:6px 0;font-size:14px;color:#374151}
 .review-meta{padding:14px 24px;background:#F9FAFB;font-size:12px;color:#9CA3AF;display:flex;gap:20px}
+/* Review Tabs */
+.review-tabs{display:flex;border-bottom:2px solid #E5E7EB;padding:0 24px;background:#F9FAFB;overflow-x:auto}
+.review-tab{padding:14px 18px;font-size:13px;font-weight:600;color:#6B7280;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;white-space:nowrap;font-family:inherit;background:none;border-top:none;border-left:none;border-right:none}
+.review-tab:hover{color:#1B2A4A}
+.review-tab.active{color:#1B2A4A;border-bottom-color:#D4A843}
+.review-tab .tab-count{display:inline-block;min-width:20px;height:20px;line-height:20px;text-align:center;border-radius:99px;font-size:11px;font-weight:700;margin-left:6px;padding:0 6px}
+.tab-count.cnt-critical{background:#FEE2E2;color:#991B1B}
+.tab-count.cnt-warning{background:#FDF6B2;color:#92400E}
+.tab-count.cnt-info{background:#DBEAFE;color:#1E40AF}
+.tab-count.cnt-red{background:#FEE2E2;color:#991B1B}
+.tab-count.cnt-rec{background:#D1FAE5;color:#065F46}
+/* Summary Table */
+.summary-table{width:100%;border-collapse:collapse}
+.summary-table th{text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:#6B7280;border-bottom:2px solid #E5E7EB;background:#F9FAFB;text-transform:uppercase;letter-spacing:0.5px}
+.summary-table td{padding:12px 16px;font-size:13px;border-bottom:1px solid #F5F6FA;vertical-align:top}
+.summary-table tr:nth-child(even){background:#FAFBFC}
+.summary-table tr:hover{background:#F5F0E5}
+.decision-badge{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700}
+.decision-accepted{background:#DEF7EC;color:#03543F}
+.decision-dismissed{background:#F3F4F6;color:#6B7280;text-decoration:line-through}
+.decision-pending{background:#FDF6B2;color:#92400E}
+.remarks-input{width:100%;border:1.5px solid #E5E7EB;border-radius:6px;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;min-width:140px}
+.remarks-input:focus{border-color:#D4A843}
+/* Upload accordion */
+.upload-accordion{border:2px solid #E5E7EB;border-radius:14px;margin-bottom:16px;overflow:hidden;background:#fff}
+.upload-accordion-header{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:14px;font-weight:600;color:#1B2A4A;background:#F9FAFB;transition:background 0.15s}
+.upload-accordion-header:hover{background:#F0F2F8}
+.upload-accordion-arrow{font-size:12px;color:#9CA3AF;transition:transform 0.2s}
+.upload-accordion-arrow.open{transform:rotate(180deg)}
+.upload-accordion-body{padding:16px 18px;display:none}
+.upload-accordion-body.open{display:block}
 
 /* ── Client Search Picker ── */
 .client-picker{position:relative;margin-bottom:12px}
@@ -344,7 +375,7 @@ async function loadSettings(){set({loading:true});const{data}=await sb.from('fir
 async function loadRoster(){const{data}=await sb.from('v_client_dashboard').select('*').eq('client_status','Active').order('name');set({rosterData:data||[]})}
 
 // ── UPLOADS & REVIEWS ──
-let uploads=[];let reviews=[];let findingActions={};let uploadingPDF=false;let reviewingPDF=false;
+let uploads=[];let reviews=[];let findingActions={};let findingRemarks={};let uploadingPDF=false;let reviewingPDF=false;let reviewTab='background';let uploadAccordionOpen=false;
 
 async function loadUploadsAndReviews(engId){
   const{data:u}=await sb.from('tax_return_uploads').select('*').eq('engagement_id',engId).order('uploaded_at',{ascending:false});
@@ -355,8 +386,8 @@ async function loadUploadsAndReviews(engId){
   const reviewIds=reviews.map(r=>r.id);
   if(reviewIds.length>0){
     const{data:fa}=await sb.from('finding_actions').select('*').in('review_id',reviewIds);
-    findingActions={};
-    (fa||[]).forEach(a=>{findingActions[a.review_id+'_'+a.finding_index]=a.action});
+    findingActions={};findingRemarks={};
+    (fa||[]).forEach(a=>{findingActions[a.review_id+'_'+a.finding_index]=a.action;findingRemarks[a.review_id+'_'+a.finding_index]=a.notes||''});
   }
   render();
 }
@@ -388,10 +419,16 @@ async function triggerReview(uploadId,engId,clientId,filePath){
   }catch(err){reviewingPDF=false;alert('Review failed: '+err.message);await loadUploadsAndReviews(engId)}
 }
 
-async function actOnFinding(reviewId,findingIndex,action){
-  await sb.from('finding_actions').upsert({review_id:reviewId,finding_index:findingIndex,action:action},{onConflict:'review_id,finding_index'}).select();
+async function actOnFinding(reviewId,findingIndex,action,notes){
+  await sb.from('finding_actions').upsert({review_id:reviewId,finding_index:findingIndex,action:action,notes:notes||null},{onConflict:'review_id,finding_index'}).select();
   findingActions[reviewId+'_'+findingIndex]=action;
+  if(notes!==undefined)findingRemarks[reviewId+'_'+findingIndex]=notes;
   render();
+}
+async function saveRemark(reviewId,findingIndex,notes){
+  const action=findingActions[reviewId+'_'+findingIndex]||'pending';
+  findingRemarks[reviewId+'_'+findingIndex]=notes;
+  await sb.from('finding_actions').upsert({review_id:reviewId,finding_index:findingIndex,action:action,notes:notes},{onConflict:'review_id,finding_index'}).select();
 }
 async function addClient(n,e,wp,hp,mp){const{data,error}=await sb.from('clients').insert({name:n,email:e||null,work_phone:wp||null,home_phone:hp||null,mobile_phone:mp||null,status:'Active'}).select().single();if(error){alert('Error: '+error.message);return}S.selectedClientId=data.id;S.selectedEngId=null;set({modal:'add-engagement',page:'client'});await loadAllClients();await loadClientEngagements(data.id)}
 async function editClient(id,f){await sb.from('clients').update(f).eq('id',id);set({modal:null});await loadDashboard();await loadAllClients();if(S.selectedClientId===id)await loadClientEngagements(id)}
@@ -520,16 +557,104 @@ function renderClientView(){
 // ── UPLOAD & REVIEW RENDER ──
 function renderUploadAndReview(){
   let html='';
-  // Upload area
+  const hasCompleted=reviews.some(r=>r.status==='completed');
   html+=`<input type="file" id="pdf-upload-input" accept=".pdf" style="display:none" data-action="file-selected"/>`;
+
+  // Upload area — accordion when review exists, full when no review
   if(uploadingPDF){
     html+=`<div class="upload-progress"><div class="upload-spinner"></div><div><div style="font-size:14px;font-weight:600;color:#1B2A4A">Uploading PDF…</div><div style="font-size:12px;color:#9CA3AF">Please wait</div></div></div>`;
   }else if(reviewingPDF){
     html+=`<div class="upload-progress"><div class="upload-spinner"></div><div><div style="font-size:14px;font-weight:600;color:#1B2A4A">AI is reviewing the return…</div><div style="font-size:12px;color:#9CA3AF">Claude is analyzing the document. This takes 15-30 seconds.</div></div></div>`;
+  }else if(hasCompleted){
+    // Collapsed accordion
+    html+=`<div class="upload-accordion"><div class="upload-accordion-header" data-action="toggle-upload-accordion"><span>📎 Uploaded Documents (${uploads.length})</span><span class="upload-accordion-arrow ${uploadAccordionOpen?'open':''}">▼</span></div><div class="upload-accordion-body ${uploadAccordionOpen?'open':''}">`;
+    html+=renderUploadedFiles();
+    html+=`<div class="upload-area" data-action="click-upload" style="margin:12px 0 0 0;padding:16px"><div class="upload-area-text" style="font-size:13px">+ Upload Another PDF</div></div></div></div>`;
   }else{
     html+=`<div class="upload-area" data-action="click-upload"><div class="upload-area-icon">📄</div><div class="upload-area-text">Upload Tax Return PDF</div><div class="upload-area-hint">Click to select a PDF file — Claude AI will review it automatically</div></div>`;
+    html+=renderUploadedFiles();
   }
-  // Show uploaded files
+
+  // Show tabbed reviews
+  reviews.filter(r=>r.status==='completed').forEach(r=>{
+    const findings=r.findings||[];const redFlags=r.red_flags||[];const missing=r.missing_items||[];const recs=r.recommendations||[];
+    const critCount=findings.filter(f=>f.severity==='critical').length;
+    const warnCount=findings.filter(f=>f.severity==='warning').length;
+    const infoCount=findings.filter(f=>f.severity==='info').length;
+
+    html+=`<div class="review-panel">
+      <div class="review-header"><h3>🤖 H4-NETRAI AI Review</h3><span class="review-status completed">Completed</span></div>
+      <div class="review-tabs">
+        <button class="review-tab ${reviewTab==='background'?'active':''}" data-rtab="background" data-action="switch-review-tab">Background</button>
+        ${critCount>0?`<button class="review-tab ${reviewTab==='critical'?'active':''}" data-rtab="critical" data-action="switch-review-tab">Critical <span class="tab-count cnt-critical">${critCount}</span></button>`:''}
+        ${warnCount>0?`<button class="review-tab ${reviewTab==='warning'?'active':''}" data-rtab="warning" data-action="switch-review-tab">Warning <span class="tab-count cnt-warning">${warnCount}</span></button>`:''}
+        ${infoCount>0?`<button class="review-tab ${reviewTab==='info'?'active':''}" data-rtab="info" data-action="switch-review-tab">Info <span class="tab-count cnt-info">${infoCount}</span></button>`:''}
+        ${redFlags.length>0?`<button class="review-tab ${reviewTab==='redflags'?'active':''}" data-rtab="redflags" data-action="switch-review-tab">Red Flags <span class="tab-count cnt-red">${redFlags.length}</span></button>`:''}
+        ${recs.length>0?`<button class="review-tab ${reviewTab==='recs'?'active':''}" data-rtab="recs" data-action="switch-review-tab">Recommendations <span class="tab-count cnt-rec">${recs.length}</span></button>`:''}
+        <button class="review-tab ${reviewTab==='summary'?'active':''}" data-rtab="summary" data-action="switch-review-tab">Summary</button>
+      </div>`;
+
+    // Tab content
+    if(reviewTab==='background'){
+      html+=`<div class="review-section" style="border-bottom:none">
+        <div style="font-size:15px;line-height:1.8;color:#374151;margin-bottom:16px">${esc(r.summary||'')}</div>
+        ${missing.length>0?`<div style="margin-top:16px"><div class="review-section-title">📋 Missing Items (${missing.length})</div>${missing.map(m=>`<div class="missing-item"><span>▸</span><span>${esc(m)}</span></div>`).join('')}</div>`:''}
+        <div class="review-meta" style="margin-top:16px;padding:12px 0;background:none;border-top:1px solid #F3F4F6"><span>Model: ${r.model_used||'claude-sonnet-4-6'}</span><span>Tokens: ${r.tokens_used||'—'}</span><span>Time: ${r.processing_time?r.processing_time.toFixed(1)+'s':'—'}</span><span>${new Date(r.created_at).toLocaleDateString()}</span></div>
+      </div>`;
+    }else if(reviewTab==='critical'||reviewTab==='warning'||reviewTab==='info'){
+      const sevFindings=findings.filter(f=>f.severity===reviewTab);
+      html+=`<div style="padding:18px 24px;overflow-x:auto"><table class="summary-table"><thead><tr><th style="width:30px">#</th><th>Form Ref</th><th>Law Ref</th><th>Finding</th><th>Recommendation</th><th style="width:100px">Action</th><th>Comments</th></tr></thead><tbody>`;
+      sevFindings.forEach(f=>{
+        const origIdx=findings.indexOf(f);
+        const act=findingActions[r.id+'_'+origIdx]||'';
+        const rem=findingRemarks[r.id+'_'+origIdx]||'';
+        const decClass=act==='accepted'?'decision-accepted':act==='dismissed'?'decision-dismissed':'decision-pending';
+        html+=`<tr>
+          <td style="font-weight:700;color:#9CA3AF">${origIdx+1}</td>
+          <td style="font-size:12px;font-weight:600;color:#1B2A4A;white-space:nowrap">${esc(f.form_ref||f.category||'—')}</td>
+          <td style="font-size:12px;color:#6B7280;white-space:nowrap">${esc(f.law_ref||'—')}</td>
+          <td><div style="font-weight:600;color:#1B2A4A;margin-bottom:4px">${esc(f.title||'')}</div><div style="font-size:12px;color:#6B7280;line-height:1.5">${esc(f.description||'')}</div></td>
+          <td style="font-size:12px;color:#374151;line-height:1.5">${esc(f.action||'—')}</td>
+          <td><div style="display:flex;gap:4px"><button class="finding-btn accept ${act==='accepted'?'accepted':''}" data-review-id="${r.id}" data-finding-idx="${origIdx}" data-faction="accepted" data-action="act-finding" style="padding:5px 10px;font-size:11px" title="Accept">${act==='accepted'?'✓ Accept':'Accept'}</button><button class="finding-btn dismiss ${act==='dismissed'?'dismissed':''}" data-review-id="${r.id}" data-finding-idx="${origIdx}" data-faction="dismissed" data-action="act-finding" style="padding:5px 10px;font-size:11px" title="Dismiss">${act==='dismissed'?'✗ Dismiss':'Dismiss'}</button></div></td>
+          <td><input class="remarks-input" placeholder="Justification…" value="${esc(rem)}" data-review-id="${r.id}" data-finding-idx="${origIdx}" data-action="save-remark"/>${act?`<div style="font-size:10px;color:#9CA3AF;margin-top:4px">${act==='accepted'?'✓ Accepted':'✗ Dismissed'} · ${new Date().toLocaleDateString()}</div>`:''}</td>
+        </tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    }else if(reviewTab==='redflags'){
+      html+=`<div class="review-section" style="border-bottom:none">`;
+      redFlags.forEach(f=>{html+=`<div class="red-flag-item" style="padding:12px 0;border-bottom:1px solid #F5F6FA"><span class="red-flag-icon">⚠️</span><span style="line-height:1.6">${esc(f)}</span></div>`});
+      html+=`</div>`;
+    }else if(reviewTab==='recs'){
+      html+=`<div class="review-section" style="border-bottom:none">`;
+      recs.forEach(rec=>{html+=`<div class="rec-item" style="padding:12px 0;border-bottom:1px solid #F5F6FA"><span style="color:#D4A843;font-weight:700">💡</span><span style="line-height:1.6">${esc(rec)}</span></div>`});
+      html+=`</div>`;
+    }else if(reviewTab==='summary'){
+      html+=`<div style="padding:18px 24px;overflow-x:auto"><table class="summary-table"><thead><tr><th style="width:30px">#</th><th>Severity</th><th>Form Ref</th><th>Law Ref</th><th>Finding</th><th>Recommendation</th><th>Decision</th><th>Comments</th></tr></thead><tbody>`;
+      findings.forEach((f,i)=>{
+        const act=findingActions[r.id+'_'+i]||'';
+        const rem=findingRemarks[r.id+'_'+i]||'';
+        const decClass=act==='accepted'?'decision-accepted':act==='dismissed'?'decision-dismissed':'decision-pending';
+        const decLabel=act==='accepted'?'Accepted':act==='dismissed'?'Dismissed':'Pending';
+        html+=`<tr>
+          <td style="font-weight:700;color:#9CA3AF">${i+1}</td>
+          <td><span class="finding-severity sev-${f.severity||'info'}">${f.severity||'info'}</span></td>
+          <td style="font-size:12px;font-weight:600;color:#1B2A4A;white-space:nowrap">${esc(f.form_ref||f.category||'—')}</td>
+          <td style="font-size:12px;color:#6B7280;white-space:nowrap">${esc(f.law_ref||'—')}</td>
+          <td><div style="font-weight:600;color:#1B2A4A;margin-bottom:2px">${esc(f.title||'')}</div><div style="font-size:11px;color:#6B7280">${esc((f.description||'').substring(0,80))}${(f.description||'').length>80?'…':''}</div></td>
+          <td style="font-size:12px;color:#374151">${esc((f.action||'').substring(0,80))}${(f.action||'').length>80?'…':''}</td>
+          <td><span class="decision-badge ${decClass}">${decLabel}</span></td>
+          <td><div style="font-size:12px;color:#374151">${esc(rem)}</div>${act?`<div style="font-size:10px;color:#9CA3AF;margin-top:2px">${act==='accepted'?'✓':'✗'} ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>`:''}</td>
+        </tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    }
+    html+=`</div>`;
+  });
+  return html;
+}
+
+function renderUploadedFiles(){
+  let html='';
   uploads.forEach(u=>{
     const review=reviews.find(r=>r.upload_id===u.id);
     const statusLabel=review?review.status:'none';
@@ -545,58 +670,6 @@ function renderUploadAndReview(){
       html+=`<span class="review-status failed">Failed</span><button class="btn btn-sm" data-upload-id="${u.id}" data-file-path="${u.file_path}" data-action="trigger-review">Retry</button>`;
     }
     html+=`</div></div>`;
-  });
-  // Show reviews
-  reviews.filter(r=>r.status==='completed').forEach(r=>{
-    const findings=r.findings||[];
-    const redFlags=r.red_flags||[];
-    const missing=r.missing_items||[];
-    const recs=r.recommendations||[];
-    html+=`<div class="review-panel">
-      <div class="review-header"><h3>🤖 H4-NETRAI AI Review</h3><span class="review-status completed">Completed</span></div>
-      <div class="review-summary">${esc(r.summary||'')}</div>`;
-    // Findings
-    if(findings.length>0){
-      html+=`<div class="review-section"><div class="review-section-title">Findings (${findings.length})</div>`;
-      findings.forEach((f,i)=>{
-        const act=findingActions[r.id+'_'+i]||'';
-        html+=`<div class="finding-card ${f.severity||'info'}">
-          <div class="finding-top">
-            <span class="finding-severity sev-${f.severity||'info'}">${f.severity||'info'}</span>
-            <span class="finding-title">${esc(f.title||'')}</span>
-            <span class="finding-cat">${esc(f.category||'')}</span>
-          </div>
-          <div class="finding-desc">${esc(f.description||'')}</div>
-          ${f.action?`<div class="finding-action">→ ${esc(f.action)}</div>`:''}
-          <div class="finding-btns">
-            <button class="finding-btn accept ${act==='accepted'?'accepted':''}" data-review-id="${r.id}" data-finding-idx="${i}" data-faction="accepted" data-action="act-finding">${act==='accepted'?'✓ Accepted':'Accept'}</button>
-            <button class="finding-btn dismiss ${act==='dismissed'?'dismissed':''}" data-review-id="${r.id}" data-finding-idx="${i}" data-faction="dismissed" data-action="act-finding">${act==='dismissed'?'Dismissed':'Dismiss'}</button>
-          </div>
-        </div>`;
-      });
-      html+=`</div>`;
-    }
-    // Red flags
-    if(redFlags.length>0){
-      html+=`<div class="review-section"><div class="review-section-title">🚩 Red Flags (${redFlags.length})</div>`;
-      redFlags.forEach(f=>{html+=`<div class="red-flag-item"><span class="red-flag-icon">⚠️</span><span>${esc(f)}</span></div>`});
-      html+=`</div>`;
-    }
-    // Missing items
-    if(missing.length>0){
-      html+=`<div class="review-section"><div class="review-section-title">📋 Missing Items (${missing.length})</div>`;
-      missing.forEach(m=>{html+=`<div class="missing-item"><span>▸</span><span>${esc(m)}</span></div>`});
-      html+=`</div>`;
-    }
-    // Recommendations
-    if(recs.length>0){
-      html+=`<div class="review-section"><div class="review-section-title">💡 Recommendations (${recs.length})</div>`;
-      recs.forEach(rec=>{html+=`<div class="rec-item"><span>→</span><span>${esc(rec)}</span></div>`});
-      html+=`</div>`;
-    }
-    // Meta
-    html+=`<div class="review-meta"><span>Model: ${r.model_used||'claude-sonnet-4-6'}</span><span>Tokens: ${r.tokens_used||'—'}</span><span>Time: ${r.processing_time?r.processing_time.toFixed(1)+'s':'—'}</span><span>Reviewed: ${new Date(r.created_at).toLocaleDateString()}</span></div>`;
-    html+=`</div>`;
   });
   return html;
 }
@@ -754,6 +827,9 @@ function attachEvents(){
   document.getElementById('pdf-upload-input')?.addEventListener('change',function(){if(this.files&&this.files[0]&&S.selectedEngId&&S.selectedClientId){uploadPDF(this.files[0],S.selectedEngId,S.selectedClientId)}});
   document.querySelectorAll('[data-action="trigger-review"]').forEach(el=>{el.onclick=()=>{if(S.selectedEngId&&S.selectedClientId)triggerReview(el.dataset.uploadId,S.selectedEngId,S.selectedClientId,el.dataset.filePath)}});
   document.querySelectorAll('[data-action="act-finding"]').forEach(el=>{el.onclick=()=>actOnFinding(el.dataset.reviewId,parseInt(el.dataset.findingIdx),el.dataset.faction)});
+  document.querySelectorAll('[data-action="switch-review-tab"]').forEach(el=>{el.onclick=()=>{reviewTab=el.dataset.rtab;render()}});
+  document.querySelectorAll('[data-action="toggle-upload-accordion"]').forEach(el=>{el.onclick=()=>{uploadAccordionOpen=!uploadAccordionOpen;render()}});
+  document.querySelectorAll('[data-action="save-remark"]').forEach(el=>{el.onblur=()=>{saveRemark(el.dataset.reviewId,parseInt(el.dataset.findingIdx),el.value)}});
   document.querySelectorAll('[data-action="show-add-client"]').forEach(el=>{el.onclick=()=>set({modal:'add-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-edit-client"]').forEach(el=>{el.onclick=()=>set({modal:'edit-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-add-engagement"]').forEach(el=>{el.onclick=()=>set({modal:'add-engagement',showPlusMenu:false})});
