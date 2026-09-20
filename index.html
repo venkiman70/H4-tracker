@@ -131,6 +131,57 @@ tbody td.center{text-align:center}
 .doc-btn.a-na{background:#F3F4F6;color:#6B7280;border-color:#D1D5DB}
 
 /* ── Client Search Picker ── */
+
+/* ── Upload & AI Review ── */
+.upload-area{border:3px dashed #D4A843;border-radius:16px;padding:28px;text-align:center;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,#FFFBF0,#FFF8E7);margin-bottom:20px}
+.upload-area:hover{border-color:#1B2A4A;background:linear-gradient(135deg,#F0F2F8,#E8EDF5)}
+.upload-area-icon{font-size:36px;margin-bottom:8px}
+.upload-area-text{font-size:15px;font-weight:600;color:#1B2A4A}
+.upload-area-hint{font-size:12px;color:#9CA3AF;margin-top:4px}
+.upload-progress{background:#fff;border-radius:12px;padding:16px 20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(27,42,74,0.08);display:flex;align-items:center;gap:14px}
+.upload-spinner{width:24px;height:24px;border:3px solid #E5E7EB;border-top-color:#D4A843;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.uploaded-file{background:#fff;border-radius:12px;padding:14px 20px;margin-bottom:12px;box-shadow:0 1px 4px rgba(27,42,74,0.06);display:flex;align-items:center;justify-content:space-between}
+.uploaded-file-info{display:flex;align-items:center;gap:12px}
+.uploaded-file-icon{font-size:24px}
+.uploaded-file-name{font-size:14px;font-weight:600;color:#1B2A4A}
+.uploaded-file-meta{font-size:12px;color:#9CA3AF;margin-top:2px}
+.review-panel{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(27,42,74,0.08);margin-bottom:20px;overflow:hidden}
+.review-header{background:linear-gradient(135deg,#0D1B33,#1B2A4A);padding:18px 24px;display:flex;align-items:center;justify-content:space-between}
+.review-header h3{color:#fff;font-size:17px;font-weight:700}
+.review-status{padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700}
+.review-status.completed{background:#DEF7EC;color:#03543F}
+.review-status.processing{background:#FDF6B2;color:#92400E}
+.review-status.failed{background:#FEE2E2;color:#991B1B}
+.review-status.pending{background:#E8EDF5;color:#1B2A4A}
+.review-summary{padding:20px 24px;border-bottom:1px solid #F3F4F6;font-size:15px;line-height:1.7;color:#374151}
+.review-section{padding:18px 24px;border-bottom:1px solid #F3F4F6}
+.review-section-title{font-size:13px;font-weight:700;color:rgba(27,42,74,0.5);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px}
+.finding-card{border:1.5px solid #E5E7EB;border-radius:12px;padding:14px 18px;margin-bottom:10px;transition:all 0.15s}
+.finding-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.finding-card.critical{border-left:4px solid #EF4444}
+.finding-card.warning{border-left:4px solid #F59E0B}
+.finding-card.info{border-left:4px solid #3B82F6}
+.finding-top{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.finding-severity{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;flex-shrink:0}
+.sev-critical{background:#FEE2E2;color:#991B1B}.sev-warning{background:#FDF6B2;color:#92400E}.sev-info{background:#DBEAFE;color:#1E40AF}
+.finding-title{font-size:15px;font-weight:700;color:#1B2A4A;flex:1}
+.finding-cat{font-size:11px;color:#9CA3AF;font-weight:600}
+.finding-desc{font-size:14px;color:#374151;line-height:1.6;margin-bottom:8px}
+.finding-action{font-size:13px;color:#1B2A4A;font-weight:600;background:#F0F2F8;padding:8px 12px;border-radius:8px;margin-bottom:10px}
+.finding-btns{display:flex;gap:8px}
+.finding-btn{padding:6px 14px;border-radius:8px;border:1.5px solid #E5E7EB;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.finding-btn.accept{color:#03543F;border-color:#84E1BC}.finding-btn.accept:hover{background:#DEF7EC}
+.finding-btn.dismiss{color:#6B7280;border-color:#D1D5DB}.finding-btn.dismiss:hover{background:#F3F4F6}
+.finding-btn.accepted{background:#DEF7EC;color:#03543F;border-color:#84E1BC}
+.finding-btn.dismissed{background:#F3F4F6;color:#9CA3AF;border-color:#D1D5DB;text-decoration:line-through}
+.red-flag-item{display:flex;align-items:start;gap:8px;padding:8px 0;font-size:14px;color:#991B1B}
+.red-flag-icon{font-size:16px;flex-shrink:0}
+.missing-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px;color:#92400E}
+.rec-item{display:flex;align-items:start;gap:8px;padding:6px 0;font-size:14px;color:#374151}
+.review-meta{padding:14px 24px;background:#F9FAFB;font-size:12px;color:#9CA3AF;display:flex;gap:20px}
+
+/* ── Client Search Picker ── */
 .client-picker{position:relative;margin-bottom:12px}
 .client-picker input{width:100%;padding:14px 18px 14px 46px;border:3px solid #1B2A4A;border-radius:14px;font-size:15px;font-weight:500;font-family:inherit;outline:none}
 .client-picker input:focus{border-color:#D4A843;box-shadow:0 0 0 4px rgba(212,168,67,0.15)}
@@ -284,7 +335,7 @@ async function loadEngTypes(){const{data}=await sb.from('engagement_types').sele
 async function loadDashboard(){set({loading:true});if(!S.engTypes.length)await loadEngTypes();const[{data:s},{data:c}]=await Promise.all([sb.from('v_dashboard_summary').select('*').single(),sb.from('v_client_dashboard').select('*').eq('client_status','Active').order('name')]);set({summary:s||S.summary,dashClients:c||[],loading:false})}
 async function loadAllClients(){const{data}=await sb.from('clients').select('*').order('name');set({allClients:data||[]})}
 async function loadClientEngagements(cid){const{data}=await sb.from('engagements').select('*').eq('client_id',cid).order('tax_year',{ascending:false});S.clientEngagements=data||[];if(data&&data.length>0&&!S.selectedEngId)S.selectedEngId=data[0].id;if(S.selectedEngId)await loadEngDetail(S.selectedEngId);else set({engDetail:null,engSections:[],loading:false})}
-async function loadEngDetail(eid){set({loading:true});const{data:e}=await sb.from('engagements').select('*').eq('id',eid).single();if(!e){set({loading:false});return}const{data:secs}=await sb.from('checklist_sections').select('*, checklist_items(*)').eq('engagement_type_code',e.engagement_type_code).order('sort_order');const{data:docs}=await sb.from('client_documents').select('*').eq('engagement_id',eid);const dm={};(docs||[]).forEach(d=>{dm[d.checklist_item_id]=d});const enriched=(secs||[]).map(sec=>({...sec,checklist_items:(sec.checklist_items||[]).sort((a,b)=>a.sort_order-b.sort_order).map(item=>({...item,doc_id:dm[item.id]?.id,doc_status:dm[item.id]?.status||'Needed'}))}));set({engDetail:e,engSections:enriched,loading:false})}
+async function loadEngDetail(eid){set({loading:true});const{data:e}=await sb.from('engagements').select('*').eq('id',eid).single();if(!e){set({loading:false});return}const{data:secs}=await sb.from('checklist_sections').select('*, checklist_items(*)').eq('engagement_type_code',e.engagement_type_code).order('sort_order');const{data:docs}=await sb.from('client_documents').select('*').eq('engagement_id',eid);const dm={};(docs||[]).forEach(d=>{dm[d.checklist_item_id]=d});const enriched=(secs||[]).map(sec=>({...sec,checklist_items:(sec.checklist_items||[]).sort((a,b)=>a.sort_order-b.sort_order).map(item=>({...item,doc_id:dm[item.id]?.id,doc_status:dm[item.id]?.status||'Needed'}))}));set({engDetail:e,engSections:enriched,loading:false});await loadUploadsAndReviews(eid)}
 async function updateDocStatus(did,iid,ns){if(did)await sb.from('client_documents').update({status:ns}).eq('id',did);else await sb.from('client_documents').insert({client_id:S.selectedClientId,engagement_id:S.selectedEngId,checklist_item_id:iid,status:ns});await loadEngDetail(S.selectedEngId);loadDashboard()}
 async function loadCallList(){set({loading:true});const{data}=await sb.from('v_call_list').select('*');set({callList:data||[],loading:false})}
 async function loadTemplates(){set({loading:true});const{data}=await sb.from('email_templates').select('*');set({templates:data||[],loading:false})}
@@ -292,6 +343,56 @@ async function loadQuestionnaires(){set({loading:true});const{data}=await sb.fro
 async function loadSettings(){set({loading:true});const{data}=await sb.from('firm_settings').select('*').single();set({settings:data,loading:false})}
 async function loadRoster(){const{data}=await sb.from('v_client_dashboard').select('*').eq('client_status','Active').order('name');set({rosterData:data||[]})}
 
+// ── UPLOADS & REVIEWS ──
+let uploads=[];let reviews=[];let findingActions={};let uploadingPDF=false;let reviewingPDF=false;
+
+async function loadUploadsAndReviews(engId){
+  const{data:u}=await sb.from('tax_return_uploads').select('*').eq('engagement_id',engId).order('uploaded_at',{ascending:false});
+  uploads=u||[];
+  const{data:r}=await sb.from('ai_reviews').select('*').eq('engagement_id',engId).order('created_at',{ascending:false});
+  reviews=r||[];
+  // Load finding actions
+  const reviewIds=reviews.map(r=>r.id);
+  if(reviewIds.length>0){
+    const{data:fa}=await sb.from('finding_actions').select('*').in('review_id',reviewIds);
+    findingActions={};
+    (fa||[]).forEach(a=>{findingActions[a.review_id+'_'+a.finding_index]=a.action});
+  }
+  render();
+}
+
+async function uploadPDF(file,engId,clientId){
+  uploadingPDF=true;render();
+  try{
+    const filePath=`${clientId}/${engId}/${Date.now()}_${file.name}`;
+    const{error:uploadErr}=await sb.storage.from('tax-returns').upload(filePath,file,{contentType:'application/pdf'});
+    if(uploadErr)throw uploadErr;
+    const{data:upload,error:insertErr}=await sb.from('tax_return_uploads').insert({engagement_id:engId,client_id:clientId,file_name:file.name,file_path:filePath,file_size:file.size}).select().single();
+    if(insertErr)throw insertErr;
+    // Create pending review
+    await sb.from('ai_reviews').insert({upload_id:upload.id,engagement_id:engId,client_id:clientId,status:'pending'});
+    uploadingPDF=false;
+    await loadUploadsAndReviews(engId);
+  }catch(err){uploadingPDF=false;alert('Upload failed: '+err.message);render()}
+}
+
+async function triggerReview(uploadId,engId,clientId,filePath){
+  reviewingPDF=true;render();
+  try{
+    const fnUrl='https://grmynepeyoeyvjpaityw.supabase.co/functions/v1/review-tax-return';
+    const resp=await fetch(fnUrl,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},body:JSON.stringify({upload_id:uploadId,engagement_id:engId,client_id:clientId,file_path:filePath})});
+    const result=await resp.json();
+    if(!resp.ok)throw new Error(result.error||'Review failed');
+    reviewingPDF=false;
+    await loadUploadsAndReviews(engId);
+  }catch(err){reviewingPDF=false;alert('Review failed: '+err.message);await loadUploadsAndReviews(engId)}
+}
+
+async function actOnFinding(reviewId,findingIndex,action){
+  await sb.from('finding_actions').upsert({review_id:reviewId,finding_index:findingIndex,action:action},{onConflict:'review_id,finding_index'}).select();
+  findingActions[reviewId+'_'+findingIndex]=action;
+  render();
+}
 async function addClient(n,e,wp,hp,mp){const{data,error}=await sb.from('clients').insert({name:n,email:e||null,work_phone:wp||null,home_phone:hp||null,mobile_phone:mp||null,status:'Active'}).select().single();if(error){alert('Error: '+error.message);return}S.selectedClientId=data.id;S.selectedEngId=null;set({modal:'add-engagement',page:'client'});await loadAllClients();await loadClientEngagements(data.id)}
 async function editClient(id,f){await sb.from('clients').update(f).eq('id',id);set({modal:null});await loadDashboard();await loadAllClients();if(S.selectedClientId===id)await loadClientEngagements(id)}
 async function addEngagement(cid,tc,ty){const{data:eng,error}=await sb.from('engagements').insert({client_id:cid,engagement_type_code:tc,tax_year:parseInt(ty),status:'Waiting'}).select().single();if(error){alert('Error: '+error.message);return}const{data:items}=await sb.from('checklist_sections').select('checklist_items(id)').eq('engagement_type_code',tc);const docs=[];(items||[]).forEach(sec=>(sec.checklist_items||[]).forEach(item=>{docs.push({client_id:cid,engagement_id:eng.id,checklist_item_id:item.id,status:'Needed'})}));if(docs.length>0)await sb.from('client_documents').insert(docs);set({modal:null,selectedEngId:eng.id});await loadClientEngagements(cid);await loadDashboard()}
@@ -408,9 +509,96 @@ function renderClientView(){
   </div>
   <div style="flex:1;min-width:0">${!e?'<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Select or add an engagement to see the checklist.</div></div>':`
     ${neededCount>0?`<div class="needed-banner">${neededCount} items still needed.</div>`:''}
+
+    ${renderUploadAndReview()}
+
     ${!S.engSections.length?'<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No checklist set up for this type yet.<br>Go to Settings → Checklist Master to configure.</div></div>':''}
     ${S.engSections.map(sec=>`<div class="section-card"><div class="section-header">${esc(sec.name)}</div>${sec.checklist_items.map(item=>`<div class="doc-row"><div class="doc-info"><div class="doc-name">${esc(item.name)}</div><div class="doc-via">${item.send_via}</div></div><div class="doc-btns">${['Received','Needed','N/A'].map(st=>`<button class="doc-btn ${item.doc_status===st?(st==='Received'?'a-recv':st==='Needed'?'a-need':'a-na'):''}" data-doc-id="${item.doc_id||''}" data-item-id="${item.id}" data-status="${st}" data-action="update-doc">${st}</button>`).join('')}</div></div>`).join('')}</div>`).join('')}`}
   </div></div>`}`;
+}
+
+// ── UPLOAD & REVIEW RENDER ──
+function renderUploadAndReview(){
+  let html='';
+  // Upload area
+  html+=`<input type="file" id="pdf-upload-input" accept=".pdf" style="display:none" data-action="file-selected"/>`;
+  if(uploadingPDF){
+    html+=`<div class="upload-progress"><div class="upload-spinner"></div><div><div style="font-size:14px;font-weight:600;color:#1B2A4A">Uploading PDF…</div><div style="font-size:12px;color:#9CA3AF">Please wait</div></div></div>`;
+  }else if(reviewingPDF){
+    html+=`<div class="upload-progress"><div class="upload-spinner"></div><div><div style="font-size:14px;font-weight:600;color:#1B2A4A">AI is reviewing the return…</div><div style="font-size:12px;color:#9CA3AF">Claude is analyzing the document. This takes 15-30 seconds.</div></div></div>`;
+  }else{
+    html+=`<div class="upload-area" data-action="click-upload"><div class="upload-area-icon">📄</div><div class="upload-area-text">Upload Tax Return PDF</div><div class="upload-area-hint">Click to select a PDF file — Claude AI will review it automatically</div></div>`;
+  }
+  // Show uploaded files
+  uploads.forEach(u=>{
+    const review=reviews.find(r=>r.upload_id===u.id);
+    const statusLabel=review?review.status:'none';
+    const sizeMB=(u.file_size/1024/1024).toFixed(1);
+    html+=`<div class="uploaded-file"><div class="uploaded-file-info"><div class="uploaded-file-icon">📎</div><div><div class="uploaded-file-name">${esc(u.file_name)}</div><div class="uploaded-file-meta">${sizeMB} MB · Uploaded ${new Date(u.uploaded_at).toLocaleDateString()}</div></div></div><div style="display:flex;align-items:center;gap:8px">`;
+    if(!review||statusLabel==='pending'){
+      html+=`<button class="btn btn-sm btn-gold" data-upload-id="${u.id}" data-file-path="${u.file_path}" data-action="trigger-review">🤖 Review with AI</button>`;
+    }else if(statusLabel==='processing'){
+      html+=`<span class="review-status processing">Processing…</span>`;
+    }else if(statusLabel==='completed'){
+      html+=`<span class="review-status completed">✓ Reviewed</span>`;
+    }else if(statusLabel==='failed'){
+      html+=`<span class="review-status failed">Failed</span><button class="btn btn-sm" data-upload-id="${u.id}" data-file-path="${u.file_path}" data-action="trigger-review">Retry</button>`;
+    }
+    html+=`</div></div>`;
+  });
+  // Show reviews
+  reviews.filter(r=>r.status==='completed').forEach(r=>{
+    const findings=r.findings||[];
+    const redFlags=r.red_flags||[];
+    const missing=r.missing_items||[];
+    const recs=r.recommendations||[];
+    html+=`<div class="review-panel">
+      <div class="review-header"><h3>🤖 H4-NETRAI AI Review</h3><span class="review-status completed">Completed</span></div>
+      <div class="review-summary">${esc(r.summary||'')}</div>`;
+    // Findings
+    if(findings.length>0){
+      html+=`<div class="review-section"><div class="review-section-title">Findings (${findings.length})</div>`;
+      findings.forEach((f,i)=>{
+        const act=findingActions[r.id+'_'+i]||'';
+        html+=`<div class="finding-card ${f.severity||'info'}">
+          <div class="finding-top">
+            <span class="finding-severity sev-${f.severity||'info'}">${f.severity||'info'}</span>
+            <span class="finding-title">${esc(f.title||'')}</span>
+            <span class="finding-cat">${esc(f.category||'')}</span>
+          </div>
+          <div class="finding-desc">${esc(f.description||'')}</div>
+          ${f.action?`<div class="finding-action">→ ${esc(f.action)}</div>`:''}
+          <div class="finding-btns">
+            <button class="finding-btn accept ${act==='accepted'?'accepted':''}" data-review-id="${r.id}" data-finding-idx="${i}" data-faction="accepted" data-action="act-finding">${act==='accepted'?'✓ Accepted':'Accept'}</button>
+            <button class="finding-btn dismiss ${act==='dismissed'?'dismissed':''}" data-review-id="${r.id}" data-finding-idx="${i}" data-faction="dismissed" data-action="act-finding">${act==='dismissed'?'Dismissed':'Dismiss'}</button>
+          </div>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+    // Red flags
+    if(redFlags.length>0){
+      html+=`<div class="review-section"><div class="review-section-title">🚩 Red Flags (${redFlags.length})</div>`;
+      redFlags.forEach(f=>{html+=`<div class="red-flag-item"><span class="red-flag-icon">⚠️</span><span>${esc(f)}</span></div>`});
+      html+=`</div>`;
+    }
+    // Missing items
+    if(missing.length>0){
+      html+=`<div class="review-section"><div class="review-section-title">📋 Missing Items (${missing.length})</div>`;
+      missing.forEach(m=>{html+=`<div class="missing-item"><span>▸</span><span>${esc(m)}</span></div>`});
+      html+=`</div>`;
+    }
+    // Recommendations
+    if(recs.length>0){
+      html+=`<div class="review-section"><div class="review-section-title">💡 Recommendations (${recs.length})</div>`;
+      recs.forEach(rec=>{html+=`<div class="rec-item"><span>→</span><span>${esc(rec)}</span></div>`});
+      html+=`</div>`;
+    }
+    // Meta
+    html+=`<div class="review-meta"><span>Model: ${r.model_used||'claude-sonnet-4-6'}</span><span>Tokens: ${r.tokens_used||'—'}</span><span>Time: ${r.processing_time?r.processing_time.toFixed(1)+'s':'—'}</span><span>Reviewed: ${new Date(r.created_at).toLocaleDateString()}</span></div>`;
+    html+=`</div>`;
+  });
+  return html;
 }
 
 // ── CALL LIST ──
@@ -561,6 +749,11 @@ function attachEvents(){
 
   document.querySelectorAll('[data-action="switch-eng"]').forEach(el=>{el.onclick=()=>{S.selectedEngId=el.dataset.engId;loadEngDetail(el.dataset.engId)}});
   document.querySelectorAll('[data-action="update-doc"]').forEach(el=>{el.onclick=()=>updateDocStatus(el.dataset.docId||null,el.dataset.itemId,el.dataset.status)});
+  // Upload & Review
+  document.querySelectorAll('[data-action="click-upload"]').forEach(el=>{el.onclick=()=>{document.getElementById('pdf-upload-input')?.click()}});
+  document.getElementById('pdf-upload-input')?.addEventListener('change',function(){if(this.files&&this.files[0]&&S.selectedEngId&&S.selectedClientId){uploadPDF(this.files[0],S.selectedEngId,S.selectedClientId)}});
+  document.querySelectorAll('[data-action="trigger-review"]').forEach(el=>{el.onclick=()=>{if(S.selectedEngId&&S.selectedClientId)triggerReview(el.dataset.uploadId,S.selectedEngId,S.selectedClientId,el.dataset.filePath)}});
+  document.querySelectorAll('[data-action="act-finding"]').forEach(el=>{el.onclick=()=>actOnFinding(el.dataset.reviewId,parseInt(el.dataset.findingIdx),el.dataset.faction)});
   document.querySelectorAll('[data-action="show-add-client"]').forEach(el=>{el.onclick=()=>set({modal:'add-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-edit-client"]').forEach(el=>{el.onclick=()=>set({modal:'edit-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-add-engagement"]').forEach(el=>{el.onclick=()=>set({modal:'add-engagement',showPlusMenu:false})});
