@@ -445,8 +445,10 @@ async function uploadPDF(file,engId,clientId){
 async function triggerReview(uploadId,engId,clientId,filePath){
   reviewingPDF=true;render();
   try{
+    const{data:{session}}=await sb.auth.getSession();
+    const token=session?.access_token||SUPABASE_KEY;
     const fnUrl='https://grmynepeyoeyvjpaityw.supabase.co/functions/v1/review-tax-return';
-    const resp=await fetch(fnUrl,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},body:JSON.stringify({upload_id:uploadId,engagement_id:engId,client_id:clientId,file_path:filePath})});
+    const resp=await fetch(fnUrl,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({upload_id:uploadId,engagement_id:engId,client_id:clientId,file_path:filePath})});
     const result=await resp.json();
     if(!resp.ok)throw new Error(result.error||'Review failed');
     reviewingPDF=false;
