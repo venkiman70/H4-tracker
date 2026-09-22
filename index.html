@@ -780,10 +780,17 @@ function renderUploadAndReview(){
       <div class="review-block-header">
         <div class="review-block-title"><span style="font-size:28px">🤖</span><h3>H4-NETRAI AI Review</h3></div>
         <div style="display:flex;align-items:center;gap:10px">
-          ${actedCount>0?`<button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);font-size:12px" data-review-idx="${reviews.filter(rv=>rv.status==='completed').indexOf(r)}" data-action="download-report">📄 Download Report</button>`:''}
+          ${workflowStatus==='complete'?`<button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);font-size:12px" data-review-idx="${reviews.filter(rv=>rv.status==='completed').indexOf(r)}" data-action="download-report">📄 Download Report</button>`:''}
           <span class="review-block-badge ${workflowBadgeClass}">${workflowLabel}</span>
         </div>
       </div>
+      ${workflowStatus!=='complete'&&totalFindings>0?`<div style="padding:12px 24px;background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border-bottom:1px solid #FDE68A;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div style="font-size:13px;font-weight:600;color:#92400E">⚠ ${totalFindings-actedCount} of ${totalFindings} findings still need your decision before the report can be downloaded.${critCount>0?' ('+critCount+' Critical, ':''}${warnCount>0?warnCount+' Warning, ':''}${infoCount>0?infoCount+' Info)':')'.replace(', )',')') }</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" style="background:#DEF7EC;color:#03543F;border-color:#84E1BC;font-size:12px" data-review-id="${r.id}" data-action="accept-all">✓ Accept All</button>
+          <button class="btn btn-sm" style="background:#F3F4F6;color:#6B7280;border-color:#D1D5DB;font-size:12px" data-review-id="${r.id}" data-action="dismiss-all">✗ Dismiss All</button>
+        </div>
+      </div>`:''}
       <div class="review-workflow">
         <div class="workflow-step ${workflowStatus==='prepared'||workflowStatus==='in-progress'||workflowStatus==='complete'?'done':''}"><div class="workflow-dot done">1</div><span>AI Prepared</span></div>
         <div class="workflow-line ${workflowStatus==='in-progress'||workflowStatus==='complete'?'done':''}"></div>
@@ -1039,6 +1046,8 @@ function attachEvents(){
   document.querySelectorAll('[data-action="toggle-upload-accordion"]').forEach(el=>{el.onclick=()=>{uploadAccordionOpen=!uploadAccordionOpen;render()}});
   document.querySelectorAll('[data-action="save-remark"]').forEach(el=>{el.onblur=()=>{saveRemark(el.dataset.reviewId,parseInt(el.dataset.findingIdx),el.value)}});
   document.querySelectorAll('[data-action="download-report"]').forEach(el=>{el.onclick=()=>{const idx=parseInt(el.dataset.reviewIdx);const completedReviews=reviews.filter(r=>r.status==='completed');if(completedReviews[idx])downloadReport(completedReviews[idx])}});
+  document.querySelectorAll('[data-action="accept-all"]').forEach(el=>{el.onclick=async()=>{const rid=el.dataset.reviewId;const rev=reviews.find(r=>r.id===rid);if(!rev)return;const findings=rev.findings||[];const writes=[];findings.forEach((_,i)=>{if(!findingActions[rid+'_'+i]){writes.push({review_id:rid,finding_index:i,action:'accepted',notes:''})}});if(writes.length>0){for(const w of writes){await sb.from('finding_actions').upsert(w,{onConflict:'review_id,finding_index'});findingActions[rid+'_'+w.finding_index]='accepted'}}render()}});
+  document.querySelectorAll('[data-action="dismiss-all"]').forEach(el=>{el.onclick=async()=>{const rid=el.dataset.reviewId;const rev=reviews.find(r=>r.id===rid);if(!rev)return;const findings=rev.findings||[];const writes=[];findings.forEach((_,i)=>{if(!findingActions[rid+'_'+i]){writes.push({review_id:rid,finding_index:i,action:'dismissed',notes:''})}});if(writes.length>0){for(const w of writes){await sb.from('finding_actions').upsert(w,{onConflict:'review_id,finding_index'});findingActions[rid+'_'+w.finding_index]='dismissed'}}render()}});
   document.querySelectorAll('[data-action="show-add-client"]').forEach(el=>{el.onclick=()=>set({modal:'add-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-edit-client"]').forEach(el=>{el.onclick=()=>set({modal:'edit-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-add-engagement"]').forEach(el=>{el.onclick=()=>set({modal:'add-engagement',showPlusMenu:false})});
