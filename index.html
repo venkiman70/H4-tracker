@@ -373,6 +373,20 @@ function esc(s){let d=document.createElement('div');d.textContent=s;return d.inn
 function catClass(c){return c==='Tax'?'cat-tax':c==='Advisory'?'cat-advisory':'cat-formation'}
 
 // ── AUTH ──
+let idleTimer=null;
+function resetIdleTimer(){
+  if(idleTimer)clearTimeout(idleTimer);
+  if(S.authState==='authenticated'){
+    idleTimer=setTimeout(()=>{
+      alert('Session expired due to inactivity. Please log in again.');
+      signOut();
+    },15*60*1000); // 15 minutes
+  }
+}
+// Track activity
+['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(evt=>{
+  document.addEventListener(evt,resetIdleTimer,{passive:true});
+});
 async function checkAuth(){
   const{data:{session}}=await sb.auth.getSession();
   if(!session){set({authState:'login'});return}
@@ -387,11 +401,11 @@ async function checkAuth(){
     if(factors.data.totp&&factors.data.totp.length>0){const totp=factors.data.totp[0];S.mfaFactorId=totp.id;const{data:ch}=await sb.auth.mfa.challenge({factorId:totp.id});S.mfaChallengeId=ch.id;set({authState:'mfa-verify'})}
     else set({authState:'mfa-enroll'})}
 }
-async function signIn(e,p){set({authError:''});const{error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){set({authError:error.message});return}S.userEmail=e;await checkAuth()}
+async function signIn(e,p){set({authError:''});const{error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){set({authError:error.message});return}S.userEmail=e;await checkAuth();resetIdleTimer()}
 async function enrollMFA(){set({authError:''});const{data,error}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'H4 Authenticator'});if(error){set({authError:error.message});return}S.mfaFactorId=data.id;S.mfaQR=data.totp.qr_code;set({authState:'mfa-enroll-scan'})}
-async function verifyMFAEnroll(code){set({authError:''});const{data:ch}=await sb.auth.mfa.challenge({factorId:S.mfaFactorId});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:ch.id,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'})}
-async function verifyMFA(code){set({authError:''});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:S.mfaChallengeId,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'})}
-async function signOut(){await sb.auth.signOut();S.authState='login';S.userEmail='';render()}
+async function verifyMFAEnroll(code){set({authError:''});const{data:ch}=await sb.auth.mfa.challenge({factorId:S.mfaFactorId});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:ch.id,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'});resetIdleTimer()}
+async function verifyMFA(code){set({authError:''});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:S.mfaChallengeId,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'});resetIdleTimer()}
+async function signOut(){if(idleTimer)clearTimeout(idleTimer);await sb.auth.signOut();S.authState='login';S.userEmail='';render()}
 
 // ── DATA ──
 async function loadEngTypes(){const{data}=await sb.from('engagement_types').select('*').eq('is_active',true).order('sort_order');S.engTypes=data||[]}
@@ -1080,7 +1094,7 @@ function attachEvents(){
   document.querySelectorAll('[data-action="remove-escalation"]').forEach(el=>{el.onclick=async()=>{await sb.from('engagements').update({escalated:false,escalated_at:null}).eq('id',el.dataset.engId);await loadCallList()}});
 }
 
-(async function(){render();await checkAuth();if(S.authState==='authenticated')await loadDashboard()})();
+(async function(){render();await checkAuth();if(S.authState==='authenticated'){resetIdleTimer();await loadDashboard()}})();
 </script>
 </body>
 </html>
