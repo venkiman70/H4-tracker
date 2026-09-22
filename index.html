@@ -465,6 +465,120 @@ async function saveRemark(reviewId,findingIndex,notes){
   findingRemarks[reviewId+'_'+findingIndex]=notes;
   await sb.from('finding_actions').upsert({review_id:reviewId,finding_index:findingIndex,action:action,notes:notes},{onConflict:'review_id,finding_index'}).select();
 }
+
+function downloadReport(review){
+  const findings=(review.findings||[]);
+  const accepted=findings.map((f,i)=>({...f,idx:i})).filter(f=>findingActions[review.id+'_'+f.idx]==='accepted');
+  const criticals=accepted.filter(f=>f.severity==='critical');
+  const warnings=accepted.filter(f=>f.severity==='warning');
+  const infos=accepted.filter(f=>f.severity==='info');
+  const redFlags=(review.red_flags||[]);
+  const client=S.allClients.find(c=>c.id===S.selectedClientId);
+  const e=S.engDetail;
+  const engType=e?S.engTypes.find(t=>t.code===e.engagement_type_code):null;
+  const totalAccepted=accepted.length;
+  const moneyFindings=accepted.filter(f=>(f.title+' '+f.description).toLowerCase().match(/deduct|credit|refund|savings|missed|overlooked|eligible|claim|benefit/));
+  const penaltyFindings=accepted.filter(f=>(f.title+' '+f.description).toLowerCase().match(/penalty|compliance|due diligence|irs|audit|failure|risk|violation/));
+
+  const reportHtml=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>H4-NETRAI Tax Review Report</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;color:#1B2A4A;line-height:1.6;padding:0;background:#fff}
+@page{size:A4;margin:20mm 15mm}
+@media print{.no-print{display:none!important}body{padding:0}}
+.report-header{background:linear-gradient(135deg,#0D1B33,#1B2A4A);padding:32px 40px;display:flex;align-items:center;justify-content:space-between;color:#fff}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-logo{width:60px;height:60px;background:rgba(0,0,0,0.3);border-radius:14px;padding:6px;display:flex;align-items:center;justify-content:center}
+.header-logo img{width:100%;height:100%;object-fit:contain}
+.header-title{font-size:24px;font-weight:800;letter-spacing:-0.5px}
+.header-sub{color:#D4A843;font-size:13px;font-weight:500;margin-top:2px}
+.header-right{text-align:right;font-size:12px;color:rgba(255,255,255,0.6)}
+.header-right div{margin-top:2px}
+.report-body{padding:32px 40px}
+.client-banner{background:linear-gradient(135deg,#F5EDD6,#FAF3E3);border:2px solid #EBD9A8;border-radius:12px;padding:20px 24px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:center}
+.client-name{font-size:20px;font-weight:800;color:#1B2A4A}
+.client-meta{font-size:13px;color:#6B7280;margin-top:4px}
+.client-type{text-align:right}
+.client-type-badge{background:#1B2A4A;color:#fff;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:700}
+.client-year{font-size:12px;color:#6B7280;margin-top:4px}
+.section-title{font-size:18px;font-weight:800;color:#1B2A4A;margin:28px 0 12px 0;letter-spacing:-0.3px;border-bottom:3px solid #D4A843;padding-bottom:8px}
+.exec-summary{font-size:15px;color:#374151;line-height:1.8;margin-bottom:24px}
+.highlight-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
+.highlight-card{border-radius:12px;padding:20px;border:2px solid}
+.highlight-card h4{font-size:14px;font-weight:700;margin-bottom:8px}
+.highlight-card ul{padding-left:18px;font-size:13px;line-height:1.8}
+.highlight-opportunity{background:#F0FDF4;border-color:#86EFAC}
+.highlight-opportunity h4{color:#166534}
+.highlight-risk{background:#FEF2F2;border-color:#FCA5A5}
+.highlight-risk h4{color:#991B1B}
+.findings-table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px}
+.findings-table th{text-align:left;padding:10px 12px;background:#F0F2F8;border-bottom:2px solid #E5E7EB;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px}
+.findings-table td{padding:10px 12px;border-bottom:1px solid #F3F4F6;vertical-align:top}
+.findings-table tr:nth-child(even){background:#FAFBFC}
+.sev-badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase}
+.sev-critical{background:#FEE2E2;color:#991B1B}
+.sev-warning{background:#FDF6B2;color:#92400E}
+.sev-info{background:#DBEAFE;color:#1E40AF}
+.report-footer{border-top:2px solid #E5E7EB;padding:20px 40px;display:flex;justify-content:space-between;font-size:11px;color:#9CA3AF;margin-top:40px}
+.footer-firm{font-weight:600;color:#1B2A4A}
+.print-btn{position:fixed;bottom:24px;right:24px;padding:14px 28px;background:linear-gradient(135deg,#D4A843,#E5C06E);color:#1B2A4A;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(212,168,67,0.4);z-index:100}
+.print-btn:hover{transform:scale(1.05)}
+.confidential{text-align:center;font-size:11px;color:#EF4444;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-top:20px}
+</style></head><body>
+<button class="print-btn no-print" onclick="window.print()">📄 Save as PDF</button>
+<div class="report-header">
+  <div class="header-left">
+    <div class="header-logo"><img src="${LOGO_S}" alt="H4-NETRAI"/></div>
+    <div><div class="header-title">H4-NETRAI</div><div class="header-sub">Neural Engine for Tax Review & Assured Intelligence</div></div>
+  </div>
+  <div class="header-right"><div style="font-size:14px;font-weight:700;color:#D4A843">Tax Return Review Report</div><div>Date: ${new Date().toLocaleDateString()}</div><div>Report ID: ${review.id.substring(0,8).toUpperCase()}</div></div>
+</div>
+<div class="report-body">
+  <div class="client-banner">
+    <div><div class="client-name">${esc(client?.name||'Client')}</div><div class="client-meta">${esc(client?.email||'')}${client?.email&&(client?.mobile_phone||client?.work_phone)?' · ':''}${esc(client?.mobile_phone||client?.work_phone||'')}</div></div>
+    <div class="client-type"><div class="client-type-badge">${e?.engagement_type_code||''} — ${engType?.name||''}</div><div class="client-year">Tax Year ${e?.tax_year||''}</div></div>
+  </div>
+
+  <div class="section-title">Executive Summary</div>
+  <div class="exec-summary">${esc(review.summary||'')}
+    ${totalAccepted>0?'<br><br>Our AI-assisted review identified <strong>'+totalAccepted+' actionable findings</strong> across your return.':''}
+    ${moneyFindings.length>0?' Of these, <strong>'+moneyFindings.length+' relate to potential tax savings or credits</strong> that may not have been fully utilized.':''}
+    ${penaltyFindings.length>0?' Additionally, <strong>'+penaltyFindings.length+' compliance concerns</strong> were identified that could result in IRS penalties or audit risk if not addressed.':''}
+  </div>
+
+  ${moneyFindings.length>0||penaltyFindings.length>0?`<div class="highlight-grid">
+    ${moneyFindings.length>0?`<div class="highlight-card highlight-opportunity"><h4>💰 Potential Tax Savings Identified</h4><ul>${moneyFindings.map(f=>'<li>'+esc(f.title)+'</li>').join('')}</ul></div>`:''}
+    ${penaltyFindings.length>0?`<div class="highlight-card highlight-risk"><h4>⚠️ Compliance Concerns</h4><ul>${penaltyFindings.map(f=>'<li>'+esc(f.title)+'</li>').join('')}</ul></div>`:''}
+  </div>`:''}
+
+  ${criticals.length>0?`<div class="section-title" style="border-bottom-color:#EF4444">Critical Findings (${criticals.length})</div>
+  <table class="findings-table"><thead><tr><th>#</th><th>Form Ref</th><th>Tax Law</th><th>Finding</th><th>Recommended Action</th></tr></thead><tbody>
+  ${criticals.map((f,i)=>`<tr><td style="font-weight:700">${i+1}</td><td style="white-space:nowrap;font-weight:600">${esc(f.form_ref||f.category||'')}</td><td style="white-space:nowrap;font-size:12px">${esc(f.law_ref||'')}</td><td><div style="font-weight:600;margin-bottom:4px">${esc(f.title)}</div><div style="font-size:12px;color:#6B7280">${esc(f.description)}</div></td><td style="font-size:12px">${esc(f.action||'')}</td></tr>`).join('')}
+  </tbody></table>`:''}
+
+  ${warnings.length>0?`<div class="section-title" style="border-bottom-color:#F59E0B">Warnings (${warnings.length})</div>
+  <table class="findings-table"><thead><tr><th>#</th><th>Form Ref</th><th>Tax Law</th><th>Finding</th><th>Recommended Action</th></tr></thead><tbody>
+  ${warnings.map((f,i)=>`<tr><td style="font-weight:700">${i+1}</td><td style="white-space:nowrap;font-weight:600">${esc(f.form_ref||f.category||'')}</td><td style="white-space:nowrap;font-size:12px">${esc(f.law_ref||'')}</td><td><div style="font-weight:600;margin-bottom:4px">${esc(f.title)}</div><div style="font-size:12px;color:#6B7280">${esc(f.description)}</div></td><td style="font-size:12px">${esc(f.action||'')}</td></tr>`).join('')}
+  </tbody></table>`:''}
+
+  ${infos.length>0?`<div class="section-title" style="border-bottom-color:#3B82F6">Informational Notes (${infos.length})</div>
+  <table class="findings-table"><thead><tr><th>#</th><th>Form Ref</th><th>Tax Law</th><th>Finding</th><th>Recommended Action</th></tr></thead><tbody>
+  ${infos.map((f,i)=>`<tr><td style="font-weight:700">${i+1}</td><td style="white-space:nowrap;font-weight:600">${esc(f.form_ref||f.category||'')}</td><td style="white-space:nowrap;font-size:12px">${esc(f.law_ref||'')}</td><td><div style="font-weight:600;margin-bottom:4px">${esc(f.title)}</div><div style="font-size:12px;color:#6B7280">${esc(f.description)}</div></td><td style="font-size:12px">${esc(f.action||'')}</td></tr>`).join('')}
+  </tbody></table>`:''}
+
+  <div class="confidential">— CONFIDENTIAL — FOR CLIENT REVIEW ONLY —</div>
+</div>
+<div class="report-footer">
+  <div><span class="footer-firm">H4 Accounting LLC</span> · Hariharan Subrahmanyan, CPA · VA CPA License #50482</div>
+  <div>hari_rad@live.com · 540-454-7216</div>
+</div>
+</body></html>`;
+
+  const win=window.open('','_blank');
+  win.document.write(reportHtml);
+  win.document.close();
+}
 async function addClient(n,e,wp,hp,mp){const{data,error}=await sb.from('clients').insert({name:n,email:e||null,work_phone:wp||null,home_phone:hp||null,mobile_phone:mp||null,status:'Active'}).select().single();if(error){alert('Error: '+error.message);return}S.selectedClientId=data.id;S.selectedEngId=null;set({modal:'add-engagement',page:'client'});await loadAllClients();await loadClientEngagements(data.id)}
 async function editClient(id,f){await sb.from('clients').update(f).eq('id',id);set({modal:null});await loadDashboard();await loadAllClients();if(S.selectedClientId===id)await loadClientEngagements(id)}
 async function addEngagement(cid,tc,ty){const{data:eng,error}=await sb.from('engagements').insert({client_id:cid,engagement_type_code:tc,tax_year:parseInt(ty),status:'Waiting'}).select().single();if(error){alert('Error: '+error.message);return}const{data:items}=await sb.from('checklist_sections').select('checklist_items(id)').eq('engagement_type_code',tc);const docs=[];(items||[]).forEach(sec=>(sec.checklist_items||[]).forEach(item=>{docs.push({client_id:cid,engagement_id:eng.id,checklist_item_id:item.id,status:'Needed'})}));if(docs.length>0)await sb.from('client_documents').insert(docs);set({modal:null,selectedEngId:eng.id});await loadClientEngagements(cid);await loadDashboard()}
@@ -665,7 +779,10 @@ function renderUploadAndReview(){
     html+=`<div class="review-panel">
       <div class="review-block-header">
         <div class="review-block-title"><span style="font-size:28px">🤖</span><h3>H4-NETRAI AI Review</h3></div>
-        <span class="review-block-badge ${workflowBadgeClass}">${workflowLabel}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${actedCount>0?`<button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);font-size:12px" data-review-idx="${reviews.filter(rv=>rv.status==='completed').indexOf(r)}" data-action="download-report">📄 Download Report</button>`:''}
+          <span class="review-block-badge ${workflowBadgeClass}">${workflowLabel}</span>
+        </div>
       </div>
       <div class="review-workflow">
         <div class="workflow-step ${workflowStatus==='prepared'||workflowStatus==='in-progress'||workflowStatus==='complete'?'done':''}"><div class="workflow-dot done">1</div><span>AI Prepared</span></div>
@@ -921,6 +1038,7 @@ function attachEvents(){
   document.querySelectorAll('[data-action="switch-review-tab"]').forEach(el=>{el.onclick=()=>{reviewTab=el.dataset.rtab;render()}});
   document.querySelectorAll('[data-action="toggle-upload-accordion"]').forEach(el=>{el.onclick=()=>{uploadAccordionOpen=!uploadAccordionOpen;render()}});
   document.querySelectorAll('[data-action="save-remark"]').forEach(el=>{el.onblur=()=>{saveRemark(el.dataset.reviewId,parseInt(el.dataset.findingIdx),el.value)}});
+  document.querySelectorAll('[data-action="download-report"]').forEach(el=>{el.onclick=()=>{const idx=parseInt(el.dataset.reviewIdx);const completedReviews=reviews.filter(r=>r.status==='completed');if(completedReviews[idx])downloadReport(completedReviews[idx])}});
   document.querySelectorAll('[data-action="show-add-client"]').forEach(el=>{el.onclick=()=>set({modal:'add-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-edit-client"]').forEach(el=>{el.onclick=()=>set({modal:'edit-client',showPlusMenu:false})});
   document.querySelectorAll('[data-action="show-add-engagement"]').forEach(el=>{el.onclick=()=>set({modal:'add-engagement',showPlusMenu:false})});
