@@ -403,8 +403,8 @@ async function checkAuth(){
 }
 async function signIn(e,p){set({authError:''});const{error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){set({authError:error.message});return}S.userEmail=e;await checkAuth();resetIdleTimer()}
 async function enrollMFA(){set({authError:''});const{data,error}=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'H4 Authenticator'});if(error){set({authError:error.message});return}S.mfaFactorId=data.id;S.mfaQR=data.totp.qr_code;set({authState:'mfa-enroll-scan'})}
-async function verifyMFAEnroll(code){set({authError:''});const{data:ch}=await sb.auth.mfa.challenge({factorId:S.mfaFactorId});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:ch.id,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'});resetIdleTimer()}
-async function verifyMFA(code){set({authError:''});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:S.mfaChallengeId,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'});resetIdleTimer()}
+async function verifyMFAEnroll(code){set({authError:''});const{data:ch}=await sb.auth.mfa.challenge({factorId:S.mfaFactorId});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:ch.id,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'});resetIdleTimer();await loadDashboard()}
+async function verifyMFA(code){set({authError:''});const{error}=await sb.auth.mfa.verify({factorId:S.mfaFactorId,challengeId:S.mfaChallengeId,code});if(error){set({authError:'Invalid code. Try again.'});return}set({authState:'authenticated'});resetIdleTimer();await loadDashboard()}
 async function signOut(){if(idleTimer)clearTimeout(idleTimer);await sb.auth.signOut();S.authState='login';S.userEmail='';render()}
 
 // ── DATA ──
